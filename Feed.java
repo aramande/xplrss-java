@@ -65,7 +65,7 @@ class Feed{
                     initRSS2(current);
                 }
                 else{
-                    System.out.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to render as RSS 2.0");
+                    System.out.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to parse as RSS 3.0");
                     initRSS2(current);
                 }
 
@@ -121,6 +121,7 @@ class Feed{
                 description = current.content;
             }
         }
+
 
         Pattern pattern = Pattern.compile("%([0-9]+) ");
         Matcher match = pattern.matcher(current.content);

@@ -18,7 +18,7 @@ class FeedTree extends JTree{
         for(TreePath path : expanded){
             expandPath(path);
         }
-        System.out.println(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
+        //System.out.println(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
     }
 
     /**

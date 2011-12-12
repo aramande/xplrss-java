@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.regex.*;
 import java.text.*;
 
 /**
@@ -72,6 +73,10 @@ class Entry{
      */
     private Data initData(Tag current, int version){
         ArrayList<Tag> tags = current.children;
+        for(Tag temp : tags){
+            System.out.print(temp.name);
+            System.out.println(temp.content);
+        }
         Data result = new Data();
         Tag defTag = new Tag();
         defTag.content = "No text";
@@ -106,18 +111,36 @@ class Entry{
                 if(info.name.equals("title")){
                     result.title = info.content;
                 }
-                else if(info.name.equals("summary")){
+                else if(info.name.equals("summary") || info.name.equals("content")){
                     result.summary = info;
                 }
                 else if(info.name.equals("updated")){
                     result.posted = parseRFC3339(info.content);
                 }
                 else if(info.name.equals("author")){
-                    result.author = info.content;
+                    handleAuthor(result, info);
                 }
             }
         }
         return result;
+    }
+
+    /**
+     * Handles the Author-tag in an Atom feed
+     */
+    private void handleAuthor(Data result, Tag current){
+        if(current.name != null){
+            if(current.name.equals("name")){
+                result.author = current.content;
+            }
+        }
+        Pattern pattern = Pattern.compile("%([0-9]+) ");
+        Matcher match = pattern.matcher(current.content);
+
+        while(match.find()){
+            String index = match.group(1);
+            handleAuthor(result, current.children.get(Integer.parseInt(index)));
+        }
     }
 
 

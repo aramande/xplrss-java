@@ -132,7 +132,7 @@ public class Parser{
                     // Found opening of start tag
                     String name = token.identifier;
                     for(Token tempToken : tokenizer.listTokensTo(" ")){
-                        if(tempToken.identifier.equals(">")){
+                        if(tempToken.identifier.equals("/") || tempToken.identifier.equals(">")){
                             token = tempToken;
                             break;
                         }
@@ -156,7 +156,7 @@ public class Parser{
                                 ArrayList<Token> fullArgName = tokenizer.listTokensTo("="); 
                                 String key = token.identifier;
                                 for(Token tempToken : fullArgName){
-                                    if(tempToken.identifier.equals(">")){
+                                    if(tempToken.identifier.equals("/") || tempToken.identifier.equals(">")){
                                         token = tempToken;
                                         break;
                                     }
