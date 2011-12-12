@@ -33,7 +33,7 @@ public class Reader{
         scrollPane2.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane2.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener(){
             public void adjustmentValueChanged(AdjustmentEvent e){
-                System.out.println("Scrollbar changed to " + e.getValue() + " by " + e.getAdjustmentType());
+                //System.out.println("Scrollbar changed to " + e.getValue() + " by " + e.getAdjustmentType());
                 //e.getAdjustable().setValue(0);
             }
         });
@@ -63,6 +63,6 @@ public class Reader{
 class FirstTimeRendering extends WindowAdapter{
     public void windowOpened(WindowEvent e){
         System.out.println("Window opened");
-        FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
+        //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
     }
 }

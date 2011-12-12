@@ -138,10 +138,6 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
             int contentHeight = (int)contentPane.getPreferredSize().getHeight();
             contentPane.setMaximumSize(new Dimension(width, contentHeight));
         }
-        //setLocation(new Point(0, (int)getLocation().getY()));
-
-        // Reset the horizontal scrolling of the scrollbar
-        //((JViewport)getParent().getParent()).setViewPosition(new Point(width/2, 0));
     }
 
     /**
@@ -171,12 +167,14 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
                 else
                     title.insertString(title.getLength(), entry.getTitle(), sc.getStyle("readTitleFont"));
 
-                title.insertString(title.getLength(), " (", sc.getStyle("textFont"));
-                title.insertString(title.getLength(), entry.getAuthor(), sc.getStyle("textFont"));
-                title.insertString(title.getLength(), ")", sc.getStyle("textFont"));
+                if(!entry.getAuthor().equals("")){
+                    title.insertString(title.getLength(), " (", sc.getStyle("textFont"));
+                    title.insertString(title.getLength(), entry.getAuthor(), sc.getStyle("textFont"));
+                    title.insertString(title.getLength(), ")", sc.getStyle("textFont"));
+                }
 
                 date.insertString(date.getLength(), dateFormat.format(entry.getPosted())+" ", sc.getStyle("dateFont"));
-                
+
                 content.insertString(content.getLength(), entry.getSummary().toString(), sc.getStyle("textFont"));
             }
             catch(BadLocationException e){
@@ -190,9 +188,11 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
                 content.remove(0, content.getLength());
 
                 title.insertString(title.getLength(), entry.getTitle(), sc.getStyle("readTitleFont"));
-                title.insertString(title.getLength(), " (", sc.getStyle("textFont"));
-                title.insertString(title.getLength(), entry.getAuthor(), sc.getStyle("textFont"));
-                title.insertString(title.getLength(), ")", sc.getStyle("textFont"));
+                if(!entry.getAuthor().equals("")){
+                    title.insertString(title.getLength(), " (", sc.getStyle("textFont"));
+                    title.insertString(title.getLength(), entry.getAuthor(), sc.getStyle("textFont"));
+                    title.insertString(title.getLength(), ")", sc.getStyle("textFont"));
+                }
 
                 date.insertString(date.getLength(), dateFormat.format(entry.getPosted())+" ", sc.getStyle("dateFont"));
             }
@@ -203,11 +203,11 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
     }
 
     /*
-    public void update(Graphics g){
-        System.out.println("repainting");
-        render();
-    }
-    */
+       public void update(Graphics g){
+       System.out.println("repainting");
+       render();
+       }
+       */
 
     /**
      * Create all the fonts used to render the entry.

@@ -3,8 +3,47 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 public class Parser{
+    public Tag parseLocal(String filename){
+        StringBuffer text = null;
+        BufferedReader reader = null;
+        try{
+            text = new StringBuffer(1024);
+            reader = new BufferedReader(new FileReader(filename));
+            try{
+                char[] buf = new char[512];
+                int numRead=0;
+                while((numRead=reader.read(buf)) != -1){
+                    String read = String.valueOf(buf, 0, numRead);
+                    text.append(read);
+                    buf = new char[512];
+                }
+            }
+            catch(IOException e){
+                System.err.println("Error: Could not read file, "+ filename);
+                return null;
+            }
+            finally{
+                try{
+                    reader.close();
+                }
+                catch(IOException e){
+                    // Ignore
+                }
+            }
+        }
+        catch(FileNotFoundException e){
+            System.out.println("Warning: No such file, "+ filename);
+            return null;
+        }
+
+        Tokenizer tokenizer = new Tokenizer();
+        tokenizer.tokenize(text.toString());
+        tagNames = new Stack<String>();
+        Tag parent = parseTokens(tokenizer);
+        return parent;
+    }
     public Tag parse(String urlString){
-        StringBuffer buffer = new StringBuffer(); 
+        StringBuffer buffer = new StringBuffer(1024); 
         String line = "";
         try{
             URL url = new URL(urlString);
@@ -101,7 +140,7 @@ public class Parser{
                         name += tempToken.identifier;
                     }
                     tagNames.push(name);
-                    
+
                     Tag tempTag = new Tag();
                     tempTag.name = name;
                     tempTag.parent = currentTag;
@@ -109,12 +148,22 @@ public class Parser{
                     currentTag.content += "%" + currentTag.children.size() + " ";
                     currentTag.children.add(tempTag);
                     currentTag = tempTag;                    
-                    
                     if(!token.identifier.equals(">")){
                         // Tag didn't end, parse all arguments
                         while((token = tokenizer.nextToken()) != null){
                             if(token.type == Type.ALPHA){
+                                // Expect equals sign
+                                ArrayList<Token> fullArgName = tokenizer.listTokensTo("="); 
                                 String key = token.identifier;
+                                for(Token tempToken : fullArgName){
+                                    if(tempToken.identifier.equals(">")){
+                                        token = tempToken;
+                                        break;
+                                    }
+                                    token = tokenizer.nextToken();
+                                    key += tempToken.identifier;
+                                }
+
                                 String value = "";
                                 ArrayList<Token> delimiters = new ArrayList<Token>();
                                 delimiters.add(new Token("\"", null));
@@ -122,7 +171,6 @@ public class Parser{
                                 delimiters.add(new Token(null, Type.ALPHA));
                                 delimiters.add(new Token(null, Type.NUM));
 
-                                token = tokenizer.nextTokenOf("="); // Expect equals sign
                                 token = tokenizer.nextTokenOf(delimiters); // Search for value
 
                                 if(token.identifier.equals("\"")){

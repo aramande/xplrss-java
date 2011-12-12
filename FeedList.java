@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import javax.swing.*;
+import javax.swing.tree.*;
 import javax.swing.event.*;
 
 /**
@@ -41,7 +42,6 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
             add(entry.getView());
         }
         renderFeed(true, true);
-        //((JScrollPane)getParent().getParent()).getVerticalScrollBar().setValue(0);
     }
 
     public void selectEntry(EntryPanel entry){
@@ -78,12 +78,14 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
     */
 
     /**
-     * Renders all entries in the feed if 'render' is true.
-     * If width is set to 0, no resizing will be done, otherwise it will resize
-     * all the entries and calculate the new height due to linewrap. 
-     *
+     * Renders all entries in the feed if 'render' is true, and resizes the
+     * entries if 'resize' is true.
+     * 
      * The term render here is used to describe the act of reprinting all the
      * text in the entry.
+     *
+     * Resize calculates the new height due to linewrap. Use when increasing or
+     * decreasing the textmass.
      */
     public void renderFeed(boolean render, boolean resize){
         Component[] entries = getComponents();
@@ -109,9 +111,15 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
 
     public void valueChanged(TreeSelectionEvent e){
         System.out.println("Changed selection in tree, update FeedList");
+        DefaultMutableTreeNode temp = (DefaultMutableTreeNode)((JTree)e.getSource()).getLastSelectedPathComponent();
+        if(temp.getUserObject() instanceof Feed){
+            Feed newFeed = (Feed)temp.getUserObject();
+            if(newFeed == null) return;
+            System.out.println(newFeed);
+            setFeed(newFeed);
+        }
     }
     public void componentHidden(ComponentEvent e) {
-        System.out.println("Now?");
     }
     public void componentMoved(ComponentEvent e) {
     }

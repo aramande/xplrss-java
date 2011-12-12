@@ -5,6 +5,12 @@ import java.text.*;
  * Data representation of an entry in a feed
  */
 class Entry{
+    public static final int RSS9 = 0;
+    public static final int RSS91 = 1;
+    public static final int RSS92 = 2;
+    public static final int RSS2 = 3;
+    public static final int ATOM = 4;
+
     private LinkedList<Entry> revisions;
     private EntryPanel view;
     private Data data;
@@ -49,32 +55,159 @@ class Entry{
         view = new EntryPanel(this);
     }
 
-    public Entry(Tag current){
-        data = initData(current);
+    public Entry(Tag current, int version){
+        data = initData(current, version);
         view = new EntryPanel(this);
     }
 
-    private Data initData(Tag current){
+    /**
+     * 
+     * @param current The recursive tagstructure representing the entry
+     * @param version What kind of feed we're parsing
+     * @see RSS9
+     * @see RSS91
+     * @see RSS92
+     * @see RSS2
+     * @see ATOM
+     */
+    private Data initData(Tag current, int version){
         ArrayList<Tag> tags = current.children;
         Data result = new Data();
-        for(Tag info : tags){
-            if(info.name.equals("title")){
-                result.title = info.content;
-            }
-            else if(info.name.equals("description")){
-                result.summary = info;
-            }
-            else if(info.name.equals("pubDate")){
-                try{
-                    DateFormat formatter = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
-                    result.posted = (Date)formatter.parse(info.content);
+        Tag defTag = new Tag();
+        defTag.content = "No text";
+
+        // Setting defaults
+        result.title = "Unknown title";
+        result.author = "";
+        result.summary = defTag;
+        result.link = "";
+        result.posted = Calendar.getInstance().getTime();
+        result.updated = Calendar.getInstance().getTime();
+        result.read = false;
+
+        if(version == RSS2){
+            for(Tag info : tags){
+                if(info.name.equals("title")){
+                    result.title = info.content;
                 }
-                catch(ParseException e){
-                    System.err.println(e);
+                else if(info.name.equals("description")){
+                    result.summary = info;
+                }
+                else if(info.name.equals("pubDate")){
+                    result.posted = parseRFC822(info.content);
+                }
+                else if(info.name.equals("author")){
+                    result.author = info.content;
+                }
+            }
+        }
+        else if(version == ATOM){
+            for(Tag info : tags){
+                if(info.name.equals("title")){
+                    result.title = info.content;
+                }
+                else if(info.name.equals("summary")){
+                    result.summary = info;
+                }
+                else if(info.name.equals("updated")){
+                    result.posted = parseRFC3339(info.content);
+                }
+                else if(info.name.equals("author")){
+                    result.author = info.content;
                 }
             }
         }
         return result;
+    }
+
+
+    private Date parseRFC822(String datestring){
+        Date d = new Date();
+        SimpleDateFormat s = null;
+        try{
+            s = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
+            d = s.parse(datestring);
+        }
+        catch(ParseException e){
+            System.err.println("Warning: Could not parse the date of "+getTitle());
+        }
+        return d;
+    }
+
+    /**
+     * Taken from http://cokere.com/RFC3339Date.txt
+     * Copyright belongs to Chad Okere (ceothrow1 at gmail dotcom).
+     *
+     * Copyright notice:
+     * I was working on an Atom (http://www.w3.org/2005/Atom) parser and
+     * discovered that I could not parse dates in the format defined by RFC 3339 using the
+     * SimpleDateFormat class. The  reason was the ':' in the time  zone. This code strips out
+     * the colon if it's there and tries four different formats on the resulting string
+     * depending on if it has a  time zone, or if it has a  fractional second part.  There is a
+     * probably a better way  to do this, and a more proper way.  But this is a really
+     * small addition to a  codebase  (You don't  need a jar, just throw  this  function in
+     * some  static Utility class if you have one).
+     *
+     * Feel free to use this in your code, but I'd appreciate it if you keep
+     * this note  in the code if you distribute it.  Thanks!
+     *
+     * For  people  who might  be  googling: The date  format  parsed  by  this
+     * goes  by: 
+     * atomDateConstruct,  xsd:dateTime,  RFC3339  and  is compatable with:
+     * ISO.8601.1988, W3C.NOTE-datetime-19980827  and  W3C.REC-xmlschema-2-20041028   (that  I
+     * know  of)
+     *
+     *
+     * Copyright 2007, Chad Okere (ceothrow1 at gmail dotcom)
+     * OMG NO WARRENTY EXPRESSED OR IMPLIED!!!1
+     */
+    private Date parseRFC3339(String datestring){
+        Date d = new Date();
+        SimpleDateFormat s = null;
+        // if there is no time zone, we don't need to do any special
+        // parsing.
+        if(datestring.endsWith("Z")){
+            try{
+                s = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US); // spec for RFC3339
+                d = s.parse(datestring);
+            }
+            catch(ParseException e){
+                // optional decimals SimpleDateFormat
+                s = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.US); // spec for RFC3339 (with fractional seconds) 
+                s.setLenient(true);
+                try{
+                    d = s.parse(datestring);
+                }
+                catch(ParseException f){
+                    System.err.println("Warning: Could not parse the date of " + getTitle());
+                }
+            }
+            return d;
+        }
+
+        // step one, split off the timezone. 
+        String firstpart = datestring.substring(0,datestring.lastIndexOf('-'));
+        String secondpart = datestring.substring(datestring.lastIndexOf('-'));
+
+        // step two, remove the colon from the timezone offset
+        secondpart = secondpart.substring(0,secondpart.indexOf(':')) + secondpart.substring(secondpart.indexOf(':')+1);
+        datestring = firstpart + secondpart;
+        s = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US); // spec for RFC3339       
+        try{ 
+            d = s.parse(datestring);          
+        }
+        catch(ParseException e){
+            // Try again with optional decimals
+            s = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ");// spec for RFC3339 (with fractional seconds)
+            s.setLenient(true);
+            try{
+                d = s.parse(datestring);
+            }
+            catch(ParseException f){
+                System.err.println("Warning: Could not parse the date of " + this.getTitle());
+            }
+        }
+        return d;
     }
 
     public String getTitle(){

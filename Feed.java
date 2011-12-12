@@ -10,46 +10,47 @@ class Feed{
     private ArrayList<Long> readEntriesID;
     private String xmlUrl;
     private String htmlUrl;
+    private String title;
+    private String description;
+    private boolean inited;
 
     public Feed(String xmlUrl){
+        this.title = "";
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
-        entries = new LinkedList<Entry>();
-        Parser parser = new Parser();
-        Tag top = parser.parse(xmlUrl);
-        init(top);
+        this.inited = false;
+        this.entries = new LinkedList<Entry>();
+        this.readEntriesContent = new ArrayList<Long>();
+        this.readEntriesID = new ArrayList<Long>();
+        init();
+    }
+    public Feed(String title, String xmlUrl){
+        this.title = title;
+        this.xmlUrl = xmlUrl;
+        this.htmlUrl = "";
+        this.inited = false;
+        this.entries = new LinkedList<Entry>();
+        this.readEntriesContent = new ArrayList<Long>();
+        this.readEntriesID = new ArrayList<Long>();
+        init();
     }
     public Feed(){
+        title = "";
         xmlUrl = "";
         htmlUrl = "";
         entries = new LinkedList<Entry>();
-        /*
-        Calendar temp = Calendar.getInstance();
-        temp.set(2010, 3, 13, 21, 32, 21);
-        entries.push(new Entry("My life in a nutshell", "Aramande", 
-                    "This is not my blog entry from a long time ago, " +
-                    "it's just a test of the wordwrap and generally the " +
-                    "unread feature of the reader.", "http://google.com/", 
-                    temp.getTime(),
-                    Calendar.getInstance().getTime(),
-                    false));
-        temp.set(2011, 11, 4, 14, 56, 8);
-        entries.push(new Entry("Unread, maximized entry", "Aramande", 
-                    "Hello RSS World!", "http://google.com/", 
-                    temp.getTime(),
-                    Calendar.getInstance().getTime(),
-                    false));
-                    entries.push(new Entry("Read, minimized entry", "Aramande", 
-                    "Hello RSS World!", "http://google.com/", 
-                    Calendar.getInstance().getTime(),
-                    Calendar.getInstance().getTime(),
-                    true));
-                    entries.push(new Entry("Read, minimized entry 2", "Aramande", 
-                    "Hello RSS World!", "http://google.com/", 
-                    Calendar.getInstance().getTime(),
-                    Calendar.getInstance().getTime(),
-                    true));
-                    */
+    }
+
+    /**
+     * Loads the xmlfile for the first time
+     */
+    public void init(){
+        if(!inited){
+            Parser parser = new Parser();
+            Tag top = parser.parse(xmlUrl);
+            init(top);
+            inited = true;
+        }
     }
 
     /**
@@ -58,9 +59,43 @@ class Feed{
      */
     private void init(Tag current){
         if(current.name != null){
-            if(current.name.equals("item")){
-                entries.addLast(new Entry(current));
+            if(current.name.equals("rss")){
+                String version = current.args.get("version");
+                if(version.equals("2.0")){
+                    initRSS2(current);
+                }
+                else{
+                    System.out.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to render as RSS 2.0");
+                    initRSS2(current);
+                }
+
                 return;
+            }
+            if(current.name.equals("feed")){
+                initAtom(current);
+                return;
+            }
+
+        }
+        Pattern pattern = Pattern.compile("%([0-9]+) ");
+        Matcher match = pattern.matcher(current.content);
+
+        while(match.find()){
+            String index = match.group(1);
+            init(current.children.get(Integer.parseInt(index)));
+        }
+    }
+    private void initRSS2(Tag current){
+        if(current.name != null){
+            if(current.name.equals("item")){
+                entries.addLast(new Entry(current, Entry.RSS2));
+                return;
+            }
+            else if(title.equals("") && current.name.equals("title")){
+                title = current.content;
+            }
+            else if(current.name.equals("description")){
+                description = current.content;
             }
         }
 
@@ -69,32 +104,62 @@ class Feed{
 
         while(match.find()){
             String index = match.group(1);
-            init(current.children.get(Integer.parseInt(index)));
+            initRSS2(current.children.get(Integer.parseInt(index)));
         }
 
     }
+    private void initAtom(Tag current){
+        if(current.name != null){
+            if(current.name.equals("entry")){
+                entries.addLast(new Entry(current, Entry.ATOM));
+                return;
+            }
+            else if(title.equals("") && current.name.equals("title")){
+                title = current.content;
+            }
+            else if(current.name.equals("summary")){
+                description = current.content;
+            }
+        }
 
+        Pattern pattern = Pattern.compile("%([0-9]+) ");
+        Matcher match = pattern.matcher(current.content);
+
+        while(match.find()){
+            String index = match.group(1);
+            initAtom(current.children.get(Integer.parseInt(index)));
+        }
+    }
+
+    public String getTitle(){
+        return title;
+    }
+
+    public String getXmlUrl(){
+        return xmlUrl;
+    }
+
+    public String getHtmlUrl(){
+        return htmlUrl;
+    }
+
+    public int getUnreadCount(){
+        return entries.size()-readEntriesID.size();
+    }
+
+    /**
+     * @return The first element as a listiterator, to be able to iterate over
+     * all the successive elements.
+     */
     public ListIterator<Entry> getEntries(){
         return getEntries(0);
     }
 
+    /**
+     * @return An element with offset 'index' as a listiterator.
+     */
     public ListIterator<Entry> getEntries(int index){
         return entries.listIterator(index);
-    }
-
-    /**
-     * Loads a section of a feed from the file into the list of entries.
-     */
-    public void load(int start, int length){
-
-    }
-
-    /**
-     * Clears out everything after the index 'newEnd'.
-     * Useful for releasing memory when switching pages.
-     */
-    public void unloadTail(int newEnd){
-        //TODO: Implement this
     }
 
     /**
@@ -102,6 +167,10 @@ class Feed{
      */
     public void unloadAll(){
         entries.clear();
+    }
+
+    public String toString(){
+        return title + " (" + getUnreadCount() + ")";
     }
 
     /**
@@ -112,6 +181,11 @@ class Feed{
     public LinkedList<Entry> append(Feed other){
         LinkedList<Entry> result = new LinkedList<Entry>(this.entries);
         result.addAll(other.entries);
+        return result;
+    }
+    public LinkedList<Entry> append(LinkedList<Entry> other){
+        LinkedList<Entry> result = new LinkedList<Entry>(this.entries);
+        result.addAll(other);
         return result;
     }
 }

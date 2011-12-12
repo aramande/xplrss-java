@@ -115,7 +115,6 @@ public class Tokenizer{
         result = currentToken;
         currentToken = tempCurrentToken;
         return result;
-
     }
 
     /**
@@ -234,7 +233,7 @@ fromStart:
             // If it gets here, the character currently parsed isn't of the same type 
             return i;
         }
-        System.out.println("Fatal Error: Something horrible has happened!");
+        System.out.println("Fatal Error: Something horrible has happened!\nExiting with token: "+token+" and was looking for type: "+type);
         System.exit(1);
         return 0;
     }
