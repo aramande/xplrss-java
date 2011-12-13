@@ -6,8 +6,7 @@ import java.util.regex.*;
  */
 class Feed{
     private LinkedList<Entry> entries;
-    private ArrayList<Long> readEntriesContent;
-    private ArrayList<Long> readEntriesID;
+    private ArrayList<Long> readEntries;
     private String xmlUrl;
     private String htmlUrl;
     private String title;
@@ -18,20 +17,20 @@ class Feed{
         this.title = "";
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
-        this.inited = false;
+        this.description = "";
         this.entries = new LinkedList<Entry>();
-        this.readEntriesContent = new ArrayList<Long>();
-        this.readEntriesID = new ArrayList<Long>();
+        this.readEntries = new ArrayList<Long>();
+        this.inited = false;
         init();
     }
     public Feed(String title, String xmlUrl){
         this.title = title;
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
-        this.inited = false;
+        this.description = "";
         this.entries = new LinkedList<Entry>();
-        this.readEntriesContent = new ArrayList<Long>();
-        this.readEntriesID = new ArrayList<Long>();
+        this.readEntries = new ArrayList<Long>();
+        this.inited = false;
         init();
     }
     public Feed(){
@@ -86,6 +85,7 @@ class Feed{
     }
     private void initRSS2(Tag current){
         if(current.name != null){
+            System.out.println(title);
             if(current.name.equals("item")){
                 entries.addLast(new Entry(current, Entry.RSS2));
                 return;
@@ -152,7 +152,7 @@ class Feed{
     }
 
     public int getUnreadCount(){
-        return entries.size()-readEntriesID.size();
+        return entries.size()-readEntries.size();
     }
 
     /**
@@ -168,6 +168,13 @@ class Feed{
      */
     public ListIterator<Entry> getEntries(int index){
         return entries.listIterator(index);
+    }
+
+    /**
+     * Get a list of the hashcodes that define the read entries.
+     */
+    public List<Long> getReadEntries(){
+        return readEntries;
     }
 
     /**

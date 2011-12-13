@@ -32,13 +32,8 @@ public class Reader{
 
         // Prohibit the horizontal scrolling of the scrollbar
         scrollPane2.getHorizontalScrollBar().setMaximum(0);
+        // Speed up the mousewheel speed a bit
         scrollPane2.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane2.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener(){
-            public void adjustmentValueChanged(AdjustmentEvent e){
-                //System.out.println("Scrollbar changed to " + e.getValue() + " by " + e.getAdjustmentType());
-                //e.getAdjustable().setValue(0);
-            }
-        });
 
         JPanel treePane = new JPanel();
         JPanel buttonPane = new JPanel();
@@ -126,7 +121,7 @@ public class Reader{
     }
 
     private FeedTree createFeedTree(){
-        FeedTree tree = new FeedTree();
+        FeedTree tree = FeedTree.init();
         tree.setMaximumSize(new Dimension(270, 1650));
         return tree;
     }
@@ -137,8 +132,17 @@ public class Reader{
 }
 
 class FirstTimeRendering extends WindowAdapter{
+    @Override
     public void windowOpened(WindowEvent e){
         System.out.println("Window opened");
         //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
+    }
+
+    @Override
+    public void windowClosing(WindowEvent e){
+        System.out.println("Window closed");
+        FeedTree.init().saveToFile(null);
+
+        System.exit(0);
     }
 }

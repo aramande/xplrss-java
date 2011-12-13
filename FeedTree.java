@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 import javax.swing.*;
@@ -8,8 +9,13 @@ import javax.swing.tree.*;
  */
 public class FeedTree extends JTree{
     private ArrayList<TreePath> expanded;
-    public FeedTree(){
+    private String opmlFile;
+
+    private static FeedTree self;
+
+    private FeedTree(){
         super();
+        opmlFile = "xplrss.opml";
         setEditable(true);
         expanded = new ArrayList<TreePath>();
         DefaultMutableTreeNode treeNode = createFeedTree();
@@ -22,29 +28,77 @@ public class FeedTree extends JTree{
         //System.out.println(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
     }
 
+    public static FeedTree init(){
+        if(self == null){
+            self = new FeedTree();
+        }
+        return self;
+    }
+
     /**
      * For now, this function creates a static tree, this will read from a file
      * later.
-     * TODO: Read from file!
      */
     private DefaultMutableTreeNode createFeedTree(){
         DefaultMutableTreeNode top = new DefaultMutableTreeNode("Feeds");
         Parser p = new Parser();
-        Tag tags = p.parseLocal("xplrss.opml");
+        Tag tags = p.parseLocal(opmlFile);
         if(tags != null){
             opml2tree(top, tags);
         }
         return top;
     }
 
+    /**
+     * Saves the entire tree structure to file, overwriting the previous file.
+     * @param newOpmlFile This is the 'Save as'-file, use null if you want to
+     * use the previously loaded file. 
+     */
+    public void saveToFile(String newOpmlFile){
+        String file = (newOpmlFile == null) ? opmlFile : newOpmlFile;
+        try{
+            FileWriter writer = new FileWriter(file);
+            BufferedWriter out = new BufferedWriter(writer);
+
+            out.write(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
+
+            out.close();
+        }
+        catch(IOException e){
+            System.out.println("Couldn't write to file: "+file);
+        }
+    }
+
+    /**
+     * Loads the file into the tree structure, overwriting the current tree.
+     * @param newOpmlFile File to load from, use null if you want to update the
+     * 
+     * tree using the same file.
+     */
+    public void loadFromFile(String newOpmlFile){
+        String file = (newOpmlFile == null) ? opmlFile : newOpmlFile;
+
+    }
+
     private String tree2opml(DefaultMutableTreeNode tree, int level){
         String result = "";
         if(level == 0){
             result += "<opml>\n\t<head>\n\t</head>\n\t<body>\n";
-            result +=tree2opml(tree, level+1);
+            result += tree2opml(tree, level+1);
             result += "\t</body>\n</opml>";
         }
         else{
+            if(tree.isRoot()){
+                // Don't insert the root node, or we'll get a recursive loop of
+                // "Feeds" categories inside eachother every time we save and
+                // load again.
+                DefaultMutableTreeNode temp;
+                for(Enumeration iter = tree.children(); iter.hasMoreElements();){
+                    temp = (DefaultMutableTreeNode)iter.nextElement();
+                    result += tree2opml(temp, level);
+                }
+                return result;
+            }
             result += "\t";
             for(int i=0; i<level; ++i){
                 result += "\t";
@@ -66,6 +120,10 @@ public class FeedTree extends JTree{
                 result += feed.getXmlUrl();
                 result += "\" htmlUrl=\"";
                 result += feed.getHtmlUrl();
+                result += "\" xpl:readEntries=\"";
+                for(Long read : feed.getReadEntries()){
+                    result += Long.toHexString(read);
+                }
                 result += "\" />\n";
             }
             else{
@@ -117,18 +175,18 @@ public class FeedTree extends JTree{
             if(current.name.equals("outline")){
                 if(current.children.size() == 0){
                     // Found a Feed
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("name"));
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("text"));
                     if(!current.args.containsKey("xmlUrl")){
-                        System.err.println("Missing xmlUrl argument on leaf outline: "+current.args.get("name"));
+                        System.err.println("Missing xmlUrl argument on leaf outline: "+current.args.get("text"));
                         return;
                     }
-                    node.setUserObject(new Feed(current.args.get("name"), current.args.get("xmlUrl")));
+                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl")));
                     node.setAllowsChildren(false);
                     tree.add(node);
                 }
                 else{
                     // Found a Category
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("name"));
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("text"));
                     node.setAllowsChildren(true);
                     tree.add(node);
 
@@ -170,16 +228,16 @@ class FeedTreeModel extends DefaultTreeModel{
     }
 
     @Override
-    public void valueForPathChanged(TreePath path, Object newValue){
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
-        if(node.getUserObject() instanceof Feed){
-            Feed temp = (Feed)node.getUserObject();
-            temp.setTitle(newValue.toString());
-            super.valueForPathChanged(path, temp);
+        public void valueForPathChanged(TreePath path, Object newValue){
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+            if(node.getUserObject() instanceof Feed){
+                Feed temp = (Feed)node.getUserObject();
+                temp.setTitle(newValue.toString());
+                super.valueForPathChanged(path, temp);
+            }
+            else{
+                // Handles every case that isn't a feed, namely categories
+                super.valueForPathChanged(path, newValue);
+            }
         }
-        else{
-            // Handles every case that isn't a feed, namely categories
-            super.valueForPathChanged(path, newValue);
-        }
-    }
 }
