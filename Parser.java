@@ -32,7 +32,7 @@ public class Parser{
             }
         }
         catch(FileNotFoundException e){
-            System.out.println("Warning: No such file, "+ filename);
+            System.err.println("Warning: No such file, "+ filename);
             return null;
         }
 
@@ -53,10 +53,10 @@ public class Parser{
             }
         }
         catch(MalformedURLException e){
-            System.out.println("Error: The URL is malformed, please try again");
+            System.err.println("Error: The URL is malformed, please try again");
         }
         catch(IOException e){
-            System.out.println("Error: Something went wrong when trying to read the page");
+            System.err.println("Error: Something went wrong when trying to read the page");
         }
         if(buffer.length() == 0){
             return null;
@@ -117,7 +117,7 @@ public class Parser{
                     }
                     if(name.equals(tagNames.peek())){
                         if((token = tokenizer.nextToken()) != null && !token.identifier.equals(">")){
-                            System.out.println("Failed to close end tag for " + tagNames.peek() + ", expected > found " + token );
+                            System.err.println("Failed to close end tag for " + tagNames.peek() + ", expected > found " + token );
                             System.exit(1);
                         }
                         tagNames.pop();
@@ -216,7 +216,7 @@ public class Parser{
                     }
                 }
                 else{
-                    System.out.println("Syntax error: Found " + token.identifier + " with type " + token.type.toString());
+                    System.err.println("Syntax error: Found " + token.identifier + " with type " + token.type.toString());
                 }
             }
             else{

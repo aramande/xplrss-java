@@ -14,8 +14,7 @@ public class Tokenizer{
      */
     public Token nextToken(){
         if(currentToken+1 >= tokens.size())
-            return null; //throw new ArrayIndexOutOfBoundsException();
-        //System.out.println(currentToken+1);
+            return null; 
         return tokens.get(++currentToken);
     }
 
@@ -233,7 +232,7 @@ fromStart:
             // If it gets here, the character currently parsed isn't of the same type 
             return i;
         }
-        System.out.println("Fatal Error: Something horrible has happened!\nExiting with token: "+token+" and was looking for type: "+type);
+        System.err.println("Fatal Error: Something horrible has happened!\nExiting with token: "+token+" and was looking for type: "+type);
         System.exit(1);
         return 0;
     }

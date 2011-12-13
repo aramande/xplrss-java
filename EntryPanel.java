@@ -121,7 +121,6 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
     public void resize(){
         // Get width of the viewport
         int width = getParent().getParent().getWidth();
-        //System.out.println("Preferred size: "+width+" and position: "+getLocation());
 
         titlePane.setSize(width-150, 9999);
         datePane.setSize(150, 9999);
@@ -178,7 +177,7 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
                 content.insertString(content.getLength(), entry.getSummary().toString(), sc.getStyle("textFont"));
             }
             catch(BadLocationException e){
-                System.out.println(e);
+                System.err.println(e);
             }
         }
         else{
@@ -197,17 +196,10 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
                 date.insertString(date.getLength(), dateFormat.format(entry.getPosted())+" ", sc.getStyle("dateFont"));
             }
             catch(BadLocationException e){
-                System.out.println(e);
+                System.err.println(e);
             }
         }
     }
-
-    /*
-       public void update(Graphics g){
-       System.out.println("repainting");
-       render();
-       }
-       */
 
     /**
      * Create all the fonts used to render the entry.

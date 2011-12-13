@@ -112,10 +112,10 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
     public void valueChanged(TreeSelectionEvent e){
         System.out.println("Changed selection in tree, update FeedList");
         DefaultMutableTreeNode temp = (DefaultMutableTreeNode)((JTree)e.getSource()).getLastSelectedPathComponent();
+        if(temp == null) return;
         if(temp.getUserObject() instanceof Feed){
             Feed newFeed = (Feed)temp.getUserObject();
             if(newFeed == null) return;
-            System.out.println(newFeed);
             setFeed(newFeed);
         }
     }

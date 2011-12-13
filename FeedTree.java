@@ -10,6 +10,7 @@ class FeedTree extends JTree{
     private ArrayList<TreePath> expanded;
     public FeedTree(){
         super();
+        setEditable(true);
         expanded = new ArrayList<TreePath>();
         DefaultMutableTreeNode treeNode = createFeedTree();
         setModel(new DefaultTreeModel(treeNode));
@@ -116,7 +117,6 @@ class FeedTree extends JTree{
             if(current.name.equals("outline")){
                 if(current.children.size() == 0){
                     // Found a Feed
-                    System.out.println(current.args);
                     DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("name"));
                     if(!current.args.containsKey("xmlUrl")){
                         System.err.println("Missing xmlUrl argument on leaf outline: "+current.args.get("name"));
@@ -128,7 +128,6 @@ class FeedTree extends JTree{
                 }
                 else{
                     // Found a Category
-                    System.out.println(current.args);
                     DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("name"));
                     node.setAllowsChildren(true);
                     tree.add(node);

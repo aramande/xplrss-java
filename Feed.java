@@ -65,7 +65,7 @@ class Feed{
                     initRSS2(current);
                 }
                 else{
-                    System.out.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to parse as RSS 3.0");
+                    System.err.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to parse as RSS 3.0");
                     initRSS2(current);
                 }
 

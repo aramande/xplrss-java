@@ -73,10 +73,6 @@ class Entry{
      */
     private Data initData(Tag current, int version){
         ArrayList<Tag> tags = current.children;
-        for(Tag temp : tags){
-            System.out.print(temp.name);
-            System.out.println(temp.content);
-        }
         Data result = new Data();
         Tag defTag = new Tag();
         defTag.content = "No text";
