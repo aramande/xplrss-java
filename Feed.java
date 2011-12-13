@@ -68,7 +68,6 @@ class Feed{
                     System.err.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to parse as RSS 3.0");
                     initRSS2(current);
                 }
-
                 return;
             }
             if(current.name.equals("feed")){
@@ -134,6 +133,14 @@ class Feed{
 
     public String getTitle(){
         return title;
+    }
+
+    public void setTitle(String value){
+        if(value == null)
+            return;
+        if(value.equals(""))
+            return;
+        this.title = value;
     }
 
     public String getXmlUrl(){

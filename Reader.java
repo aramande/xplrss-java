@@ -80,7 +80,8 @@ public class Reader{
             
             String nodeName = JOptionPane.showInputDialog(null, "Enter the feed url, leave empty if creating a category:");
             if(nodeName == null)
-                return; // User cancelled
+                // User cancelled
+                return; 
 
             DefaultTreeModel model = (DefaultTreeModel)feedTree.getModel();
 
@@ -118,6 +119,7 @@ public class Reader{
                 answer = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this category?\nAll of its feeds will be deleted too.", "Deleting "+node.toString(), JOptionPane.YES_NO_OPTION);
 
             if(answer == 0){
+                // User clicked yes
                 model.removeNodeFromParent(node);
             }
         }

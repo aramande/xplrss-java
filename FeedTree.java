@@ -6,14 +6,14 @@ import javax.swing.tree.*;
 /**
  * Graphical representation of the tree of feeds.
  */
-class FeedTree extends JTree{
+public class FeedTree extends JTree{
     private ArrayList<TreePath> expanded;
     public FeedTree(){
         super();
         setEditable(true);
         expanded = new ArrayList<TreePath>();
         DefaultMutableTreeNode treeNode = createFeedTree();
-        setModel(new DefaultTreeModel(treeNode));
+        setModel(new FeedTreeModel(treeNode));
         addTreeSelectionListener(FeedList.init());
 
         for(TreePath path : expanded){
@@ -161,5 +161,25 @@ class FeedTree extends JTree{
             opml2tree(tree, current.children.get(Integer.parseInt(index)));
         }
         return;
+    }
+}
+
+class FeedTreeModel extends DefaultTreeModel{
+    public FeedTreeModel(TreeNode root){
+        super(root);
+    }
+
+    @Override
+    public void valueForPathChanged(TreePath path, Object newValue){
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+        if(node.getUserObject() instanceof Feed){
+            Feed temp = (Feed)node.getUserObject();
+            temp.setTitle(newValue.toString());
+            super.valueForPathChanged(path, temp);
+        }
+        else{
+            // Handles every case that isn't a feed, namely categories
+            super.valueForPathChanged(path, newValue);
+        }
     }
 }
