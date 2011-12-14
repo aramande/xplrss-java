@@ -1,4 +1,6 @@
+import java.io.*;
 import java.awt.*;
+import java.net.*;
 import java.awt.event.*;
 import java.text.*;
 import javax.swing.*;
@@ -73,7 +75,24 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
         }
         else{
             // TODO: Open url in browser!!
-            System.out.println("[Open website in browser here]");
+            Desktop desktop = Desktop.getDesktop();
+
+            if(!desktop.isSupported(Desktop.Action.BROWSE)){
+                System.err.println("Error: Desktop doesn't support the browse action");
+                return;
+            }
+
+            try {
+                java.net.URI uri = new URI(entry.getLink());
+                System.out.println("[Open website in browser here]");
+                desktop.browse(uri);
+            }
+            catch(URISyntaxException e){
+                System.err.println("Error: Couldn't understand the link from entry: "+ entry.getTitle());
+            }
+            catch(IOException e){
+                System.err.println("Error: Couldn't open the browser: "+ e);
+            }
         }
     }
 

@@ -1,3 +1,4 @@
+import java.text.*;
 import java.util.*;
 import java.util.regex.*;
 import javax.swing.tree.*;
@@ -155,14 +156,17 @@ class Feed{
     }
 
     private String feed2rss(){
+        SimpleDateFormat s = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
         String result = "";
         result += "<rss>\n\t<channel>\n";
+        result += "\t\t<title>" + title + "</title>\n";
+        result += "\t\t<description>" + description + "</description>\n";
         for(Entry entry : entries){
             result += "\t\t<item>\n";
             result += "\t\t\t<title>" + entry.getTitle() + "</title>\n";
             result += "\t\t\t<author>" + entry.getAuthor() + "</author>\n";
             result += "\t\t\t<description>" + entry.getSummary() + "</description>\n";
-            result += "\t\t\t<pubDate>" + entry.getPosted() + "</pubDate>\n";
+            result += "\t\t\t<pubDate>" + s.format(entry.getPosted()) + "</pubDate>\n";
             result += "\t\t</item>\n";
         }
         result += "\t</channel>\n</rss>";

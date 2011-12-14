@@ -100,6 +100,9 @@ class Entry{
                 else if(info.name.equals("author")){
                     result.author = info.content;
                 }
+                else if(info.name.equals("link")){
+                    result.link = info.content;
+                }
             }
         }
         else if(version == ATOM){
@@ -115,6 +118,13 @@ class Entry{
                 }
                 else if(info.name.equals("author")){
                     handleAuthor(result, info);
+                }
+                else if(result.link.equals("") && info.name.equals("link")){
+                    if(!info.args.containsKey("rel"))
+                        result.link = info.args.get("href");
+                    else if(info.args.get("rel").equals("alternate")){
+                        result.link = info.args.get("href");
+                    }
                 }
             }
         }
@@ -140,7 +150,7 @@ class Entry{
     }
 
 
-    private Date parseRFC822(String datestring){
+    public static Date parseRFC822(String datestring){
         Date d = new Date();
         SimpleDateFormat s = null;
         try{
@@ -148,7 +158,7 @@ class Entry{
             d = s.parse(datestring);
         }
         catch(ParseException e){
-            System.err.println("Warning: Could not parse the date of "+getTitle());
+            System.err.println("Warning: Could not parse the date of "+datestring);
         }
         return d;
     }
@@ -180,7 +190,7 @@ class Entry{
      * Copyright 2007, Chad Okere (ceothrow1 at gmail dotcom)
      * OMG NO WARRENTY EXPRESSED OR IMPLIED!!!1
      */
-    private Date parseRFC3339(String datestring){
+    public static Date parseRFC3339(String datestring){
         Date d = new Date();
         SimpleDateFormat s = null;
         // if there is no time zone, we don't need to do any special
@@ -198,7 +208,7 @@ class Entry{
                     d = s.parse(datestring);
                 }
                 catch(ParseException f){
-                    System.err.println("Warning: Could not parse the date of " + getTitle());
+                    System.err.println("Warning: Could not parse the date of " + datestring);
                 }
             }
             return d;
@@ -223,7 +233,7 @@ class Entry{
                 d = s.parse(datestring);
             }
             catch(ParseException f){
-                System.err.println("Warning: Could not parse the date of " + this.getTitle());
+                System.err.println("Warning: Could not parse the date of " + datestring);
             }
         }
         return d;
@@ -234,6 +244,9 @@ class Entry{
     }
     public String getAuthor(){
         return data.author; 
+    }
+    public String getLink(){
+        return data.link; 
     }
     public Date getPosted(){
         return data.posted; 
