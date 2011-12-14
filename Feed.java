@@ -1,5 +1,6 @@
 import java.util.*;
 import java.util.regex.*;
+import javax.swing.tree.*;
 
 /**
  * This is the data of a single feed that can be printed in the right area of the reader.
@@ -21,17 +22,15 @@ class Feed{
         this.entries = new LinkedList<Entry>();
         this.readEntries = new ArrayList<Long>();
         this.inited = false;
-        init();
     }
-    public Feed(String title, String xmlUrl){
+    public Feed(String title, String xmlUrl, ArrayList<Long> readEntries){
         this.title = title;
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
         this.description = "";
         this.entries = new LinkedList<Entry>();
-        this.readEntries = new ArrayList<Long>();
+        this.readEntries = readEntries;
         this.inited = false;
-        init();
     }
     public Feed(){
         title = "";
@@ -48,6 +47,7 @@ class Feed{
             Parser parser = new Parser();
             Tag top = parser.parse(xmlUrl);
             init(top);
+            System.out.println(feed2rss());
             inited = true;
         }
     }
@@ -85,7 +85,6 @@ class Feed{
     }
     private void initRSS2(Tag current){
         if(current.name != null){
-            System.out.println(title);
             if(current.name.equals("item")){
                 entries.addLast(new Entry(current, Entry.RSS2));
                 return;
@@ -155,11 +154,27 @@ class Feed{
         return entries.size()-readEntries.size();
     }
 
+    private String feed2rss(){
+        String result = "";
+        result += "<rss>\n\t<channel>\n";
+        for(Entry entry : entries){
+            result += "\t\t<item>\n";
+            result += "\t\t\t<title>" + entry.getTitle() + "</title>\n";
+            result += "\t\t\t<author>" + entry.getAuthor() + "</author>\n";
+            result += "\t\t\t<description>" + entry.getSummary() + "</description>\n";
+            result += "\t\t\t<pubDate>" + entry.getPosted() + "</pubDate>\n";
+            result += "\t\t</item>\n";
+        }
+        result += "\t</channel>\n</rss>";
+        return result;
+    }
+
     /**
      * @return The first element as a listiterator, to be able to iterate over
      * all the successive elements.
      */
     public ListIterator<Entry> getEntries(){
+        init();
         return getEntries(0);
     }
 
@@ -167,6 +182,7 @@ class Feed{
      * @return An element with offset 'index' as a listiterator.
      */
     public ListIterator<Entry> getEntries(int index){
+        init();
         return entries.listIterator(index);
     }
 

@@ -121,7 +121,12 @@ public class FeedTree extends JTree{
                 result += "\" htmlUrl=\"";
                 result += feed.getHtmlUrl();
                 result += "\" xpl:readEntries=\"";
+                boolean first = true;
                 for(Long read : feed.getReadEntries()){
+                    if(!first){
+                        result += ",";
+                    }
+                    first = false;
                     result += Long.toHexString(read);
                 }
                 result += "\" />\n";
@@ -180,7 +185,16 @@ public class FeedTree extends JTree{
                         System.err.println("Missing xmlUrl argument on leaf outline: "+current.args.get("text"));
                         return;
                     }
-                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl")));
+
+                    ArrayList<Long> readEntries = new ArrayList<Long>();
+                    if(current.args.containsKey("xpl:readEntries") && !current.args.get("xpl:readEntries").equals("")){
+                        String[] hashList = current.args.get("xpl:readEntries").split(",");
+                        for(String hash : hashList){
+                            readEntries.add(Long.parseLong(hash));
+                        }
+                    }
+
+                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl"), readEntries));
                     node.setAllowsChildren(false);
                     tree.add(node);
                 }

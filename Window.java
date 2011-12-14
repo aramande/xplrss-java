@@ -14,7 +14,5 @@ public class Window extends JFrame{
         super(title);
         setSize(height, width);
         setLayout(new BorderLayout());
-
-        //setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 }
