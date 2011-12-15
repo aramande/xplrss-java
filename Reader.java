@@ -150,6 +150,13 @@ class FirstTimeRendering extends WindowAdapter{
     @Override
         public void windowOpened(WindowEvent e){
             System.out.println("Window opened");
+            TreeModel model = FeedTree.init().getModel();
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
+            CompoundFeed feed = (CompoundFeed)root.getUserObject();
+            feed.init();
+            model.valueForPathChanged(new TreePath(root), "Feeds");
+            //feed.updateTreeNode();
+            
             //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
         }
 

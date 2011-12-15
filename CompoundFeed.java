@@ -12,17 +12,19 @@ class CompoundFeed extends Feed{
     }
 
     @Override
-    public void init(){
-        unreadCount = 0;
-        for(Enumeration child = category.children(); child.hasMoreElements();){
-            DefaultMutableTreeNode feed = (DefaultMutableTreeNode)child.nextElement();
-            if(feed.getUserObject() instanceof Feed){
-                ((Feed)feed.getUserObject()).init();
-                entries = this.append((Feed)feed.getUserObject());
-                unreadCount += ((Feed)feed.getUserObject()).getUnreadCount();
+        public void init(){
+            if(!inited){
+                unreadCount = 0;
+                for(Enumeration child = category.children(); child.hasMoreElements();){
+                    DefaultMutableTreeNode feed = (DefaultMutableTreeNode)child.nextElement();
+                    if(feed.getUserObject() instanceof Feed){
+                        ((Feed)feed.getUserObject()).init();
+                        entries = this.append((Feed)feed.getUserObject());
+                        unreadCount += ((Feed)feed.getUserObject()).getUnreadCount();
+                    }
+                }
+                Collections.sort(entries, new SortByPosted());
+                inited = true;
             }
         }
-        Collections.sort(entries, new SortByPosted());
-        inited = true;
-    }
 }

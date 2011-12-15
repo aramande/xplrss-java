@@ -124,6 +124,7 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
             if(newFeed == null) return;
             setFeed(newFeed);
             model.nodeChanged(temp);
+            //renderFeed(true, true);
         }
 
     }

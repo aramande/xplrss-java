@@ -12,13 +12,17 @@ class Feed{
     protected ArrayList<Integer> readEntries;
     protected String xmlUrl;
     protected String htmlUrl;
+    protected String guid;
     protected String title;
     protected String description;
     protected DefaultMutableTreeNode node;
     protected int unreadCount;
+    protected int hash;
     protected boolean inited;
 
     public Feed(String xmlUrl){
+        this.hash = 0;
+        this.guid = "";
         this.title = "";
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
@@ -27,7 +31,9 @@ class Feed{
         this.readEntries = new ArrayList<Integer>();
         this.inited = false;
     }
-    public Feed(String title, String xmlUrl, ArrayList<Integer> readEntries, DefaultMutableTreeNode node){
+    public Feed(String title, String xmlUrl, ArrayList<Integer> readEntries, DefaultMutableTreeNode node, int hash){
+        this.hash = hash;
+        this.guid = "";
         this.title = title;
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
@@ -38,6 +44,8 @@ class Feed{
         this.inited = false;
     }
     public Feed(){
+        this.hash = 0;
+        this.guid = "";
         this.title = "";
         this.xmlUrl = "";
         this.htmlUrl = "";
@@ -52,13 +60,9 @@ class Feed{
      */
     public void init(){
         if(!inited){
-            Parser parser = new Parser();
-            Tag top = parser.parse(xmlUrl);
-            init(top);
-            saveToFile();
+            loadFile();
+            //update();
             inited = true;
-            unreadCount = entries.size() - readEntries.size();
-            updateTreeNode();
         }
     }
 
@@ -67,8 +71,11 @@ class Feed{
      */
     public void loadFile(){
         Parser parser = new Parser();
-        Tag top = parser.parseLocal(Integer.toString(hashCode())+".xml");
+        String filename = Integer.toString(hashCode())+".xml";
+        Tag top = parser.parseLocal(filename);
         init(top);
+        unreadCount = entries.size() - readEntries.size();
+        updateTreeNode();
     }
 
     /**
@@ -78,6 +85,10 @@ class Feed{
         Parser parser = new Parser();
         Tag top = parser.parse(xmlUrl);
         init(top);
+        unreadCount = entries.size() - readEntries.size();
+        updateTreeNode();
+        // TODO: Insert cleaning code here
+        saveToFile();
     }
 
     /**
@@ -120,6 +131,9 @@ class Feed{
             else if(title.equals("") && current.name.equals("title")){
                 title = current.content;
             }
+            else if(current.name.equals("guid")){
+                guid = current.content;
+            }
             else if(current.name.equals("description")){
                 description = current.content;
             }
@@ -143,11 +157,13 @@ class Feed{
             else if(title.equals("") && current.name.equals("title")){
                 title = current.content;
             }
+            else if(current.name.equals("id")){
+                guid = current.content;
+            }
             else if(current.name.equals("summary")){
                 description = current.content;
             }
         }
-
 
         Pattern pattern = Pattern.compile("%([0-9]+) ");
         Matcher match = pattern.matcher(current.content);
@@ -232,12 +248,13 @@ class Feed{
     private String feed2rss(){
         SimpleDateFormat s = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US);
         String result = "";
-        result += "<rss>\n\t<channel>\n";
+        result += "<rss version=\"2.0\">\n\t<channel>\n";
         result += "\t\t<title>" + title + "</title>\n";
+        result += "\t\t<guid>" + guid + "</guid>\n";
         result += "\t\t<description>" + description + "</description>\n";
         for(Entry entry : entries){
             result += "\t\t<item>\n";
-            result += "\t\t\t<id>" + entry.hashCode() + "<id>\n";
+            //result += "\t\t\t<id>" + entry.hashCode() + "</id>\n";
             result += "\t\t\t<title>" + entry.getTitle() + "</title>\n";
             result += "\t\t\t<link>" + entry.getLink() + "</link>\n";
             result += "\t\t\t<author>" + entry.getAuthor() + "</author>\n";
@@ -284,6 +301,12 @@ class Feed{
         if(getUnreadCount() <= 0)
             return title;
         return title + " (" + getUnreadCount() + ")";
+    }
+
+    public int hashCode(){
+        if(hash != 0) return hash;
+        if(!guid.equals("")) return guid.hashCode();
+        else return description.hashCode();
     }
 
     /**

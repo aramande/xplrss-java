@@ -116,6 +116,8 @@ public class FeedTree extends JTree{
                 result += feed.getTitle();
                 result += "\" title=\"";
                 result += feed.getTitle();
+                result += "\" id=\"";
+                result += feed.hashCode();
                 result += "\" xmlUrl=\"";
                 result += feed.getXmlUrl();
                 result += "\" htmlUrl=\"";
@@ -194,7 +196,7 @@ public class FeedTree extends JTree{
                         }
                     }
 
-                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl"), readEntries, node));
+                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl"), readEntries, node, Integer.parseInt(current.args.get("id"))));
                     node.setAllowsChildren(false);
                     tree.add(node);
                 }
