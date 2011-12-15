@@ -1,3 +1,4 @@
+import java.io.*;
 import java.text.*;
 import java.util.*;
 import java.util.regex.*;
@@ -7,13 +8,15 @@ import javax.swing.tree.*;
  * This is the data of a single feed that can be printed in the right area of the reader.
  */
 class Feed{
-    private LinkedList<Entry> entries;
-    private ArrayList<Long> readEntries;
-    private String xmlUrl;
-    private String htmlUrl;
-    private String title;
-    private String description;
-    private boolean inited;
+    protected LinkedList<Entry> entries;
+    protected ArrayList<Integer> readEntries;
+    protected String xmlUrl;
+    protected String htmlUrl;
+    protected String title;
+    protected String description;
+    protected DefaultMutableTreeNode node;
+    protected int unreadCount;
+    protected boolean inited;
 
     public Feed(String xmlUrl){
         this.title = "";
@@ -21,23 +24,27 @@ class Feed{
         this.htmlUrl = "";
         this.description = "";
         this.entries = new LinkedList<Entry>();
-        this.readEntries = new ArrayList<Long>();
+        this.readEntries = new ArrayList<Integer>();
         this.inited = false;
     }
-    public Feed(String title, String xmlUrl, ArrayList<Long> readEntries){
+    public Feed(String title, String xmlUrl, ArrayList<Integer> readEntries, DefaultMutableTreeNode node){
         this.title = title;
         this.xmlUrl = xmlUrl;
         this.htmlUrl = "";
         this.description = "";
         this.entries = new LinkedList<Entry>();
         this.readEntries = readEntries;
+        this.node = node;
         this.inited = false;
     }
     public Feed(){
-        title = "";
-        xmlUrl = "";
-        htmlUrl = "";
-        entries = new LinkedList<Entry>();
+        this.title = "";
+        this.xmlUrl = "";
+        this.htmlUrl = "";
+        this.description = "";
+        this.entries = new LinkedList<Entry>();
+        this.readEntries = new ArrayList<Integer>();
+        this.inited = false;
     }
 
     /**
@@ -48,9 +55,29 @@ class Feed{
             Parser parser = new Parser();
             Tag top = parser.parse(xmlUrl);
             init(top);
-            System.out.println(feed2rss());
+            saveToFile();
             inited = true;
+            unreadCount = entries.size() - readEntries.size();
+            updateTreeNode();
         }
+    }
+
+    /**
+     * Loads the xml-file that was cached on the computer.
+     */
+    public void loadFile(){
+        Parser parser = new Parser();
+        Tag top = parser.parseLocal(Integer.toString(hashCode())+".xml");
+        init(top);
+    }
+
+    /**
+     * Updates the feed using the xmlUrl
+     */
+    public void update(){
+        Parser parser = new Parser();
+        Tag top = parser.parse(xmlUrl);
+        init(top);
     }
 
     /**
@@ -87,7 +114,7 @@ class Feed{
     private void initRSS2(Tag current){
         if(current.name != null){
             if(current.name.equals("item")){
-                entries.addLast(new Entry(current, Entry.RSS2));
+                entries.addLast(new Entry(current, Entry.RSS2, this));
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
@@ -110,7 +137,7 @@ class Feed{
     private void initAtom(Tag current){
         if(current.name != null){
             if(current.name.equals("entry")){
-                entries.addLast(new Entry(current, Entry.ATOM));
+                entries.addLast(new Entry(current, Entry.ATOM, this));
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
@@ -151,8 +178,55 @@ class Feed{
         return htmlUrl;
     }
 
+    public void readEntry(Integer entryHash){
+        if(readEntries.contains(entryHash)){
+            return;
+        }
+        readEntries.add(entryHash);
+        updateTreeNode();
+    }
+
+    public void updateTreeNode(){
+        FeedTreeModel model = (FeedTreeModel)FeedTree.init().getModel();
+        LinkedList<DefaultMutableTreeNode> path = new LinkedList<DefaultMutableTreeNode>();
+
+        DefaultMutableTreeNode temp = node;
+        while (temp != null) {
+            path.addFirst(temp);
+            temp = (DefaultMutableTreeNode)temp.getParent();
+        }
+
+        model.valueForPathChanged(new TreePath(path.toArray()), getTitle());
+    }
+
+    public void unreadEntry(Integer entryHash){
+        if(readEntries.contains(entryHash)){
+            readEntries.remove(entryHash);
+        }
+    }
+
+    public boolean isRead(Integer entryHash){
+        return readEntries.contains(entryHash);
+    }
+
     public int getUnreadCount(){
-        return entries.size()-readEntries.size();
+        return unreadCount;
+    }
+
+    public void saveToFile(){
+        String file = Integer.toString(hashCode());
+        file += ".xml";
+        try{
+            FileWriter writer = new FileWriter(file);
+            BufferedWriter out = new BufferedWriter(writer);
+
+            out.write(feed2rss());
+
+            out.close();
+        }
+        catch(IOException e){
+            System.out.println("Couldn't write to file: "+file);
+        }
     }
 
     private String feed2rss(){
@@ -163,7 +237,9 @@ class Feed{
         result += "\t\t<description>" + description + "</description>\n";
         for(Entry entry : entries){
             result += "\t\t<item>\n";
+            result += "\t\t\t<id>" + entry.hashCode() + "<id>\n";
             result += "\t\t\t<title>" + entry.getTitle() + "</title>\n";
+            result += "\t\t\t<link>" + entry.getLink() + "</link>\n";
             result += "\t\t\t<author>" + entry.getAuthor() + "</author>\n";
             result += "\t\t\t<description>" + entry.getSummary() + "</description>\n";
             result += "\t\t\t<pubDate>" + s.format(entry.getPosted()) + "</pubDate>\n";
@@ -193,7 +269,7 @@ class Feed{
     /**
      * Get a list of the hashcodes that define the read entries.
      */
-    public List<Long> getReadEntries(){
+    public List<Integer> getReadEntries(){
         return readEntries;
     }
 
@@ -205,6 +281,8 @@ class Feed{
     }
 
     public String toString(){
+        if(getUnreadCount() <= 0)
+            return title;
         return title + " (" + getUnreadCount() + ")";
     }
 

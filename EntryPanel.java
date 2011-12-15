@@ -139,7 +139,7 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
      */
     public void resize(){
         // Get width of the viewport
-        int width = getParent().getParent().getWidth();
+        int width = FeedList.init().getParent().getWidth();
 
         titlePane.setSize(width-150, 9999);
         datePane.setSize(150, 9999);

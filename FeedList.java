@@ -44,6 +44,10 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
         renderFeed(true, true);
     }
 
+    public Feed getFeed(){
+        return currentFeed;
+    }
+
     public void selectEntry(EntryPanel entry){
         if(entry.equals(selected)){
             selected.select();

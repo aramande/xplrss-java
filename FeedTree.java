@@ -41,6 +41,7 @@ public class FeedTree extends JTree{
      */
     private DefaultMutableTreeNode createFeedTree(){
         DefaultMutableTreeNode top = new DefaultMutableTreeNode("Feeds");
+        top.setUserObject(new CompoundFeed("Feeds", top));
         Parser p = new Parser();
         Tag tags = p.parseLocal(opmlFile);
         if(tags != null){
@@ -72,7 +73,6 @@ public class FeedTree extends JTree{
     /**
      * Loads the file into the tree structure, overwriting the current tree.
      * @param newOpmlFile File to load from, use null if you want to update the
-     * 
      * tree using the same file.
      */
     public void loadFromFile(String newOpmlFile){
@@ -109,7 +109,7 @@ public class FeedTree extends JTree{
                     feed = (Feed)tree.getUserObject();
                 }
                 else{
-                    System.err.println("Fatal error: Leaf node was not a feed, please consult the creator of this software.");
+                    System.err.println("Fatal error: Leaf node was not a feed, deleting node.");
                     return "";
                 }
                 result += "<outline text=\"";
@@ -122,22 +122,22 @@ public class FeedTree extends JTree{
                 result += feed.getHtmlUrl();
                 result += "\" xpl:readEntries=\"";
                 boolean first = true;
-                for(Long read : feed.getReadEntries()){
+                for(Integer read : feed.getReadEntries()){
                     if(!first){
                         result += ",";
                     }
                     first = false;
-                    result += Long.toHexString(read);
+                    result += Integer.toString(read, 16);
                 }
                 result += "\" />\n";
             }
             else{
 
                 result += "<outline text=\"";
-                if(tree.getUserObject() instanceof String){
-                    result += (String)tree.getUserObject();
+                if(tree.getUserObject() instanceof CompoundFeed){
+                    result += ((CompoundFeed)tree.getUserObject()).getTitle();
                     result += "\" title=\"";
-                    result += (String)tree.getUserObject();
+                    result += ((CompoundFeed)tree.getUserObject()).getTitle();
                 }    
                 else{
                     System.err.println("Fatal error: Non-leaf node was not a category, please consult the creator of this software.");
@@ -180,27 +180,27 @@ public class FeedTree extends JTree{
             if(current.name.equals("outline")){
                 if(current.children.size() == 0){
                     // Found a Feed
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("text"));
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode();
                     if(!current.args.containsKey("xmlUrl")){
                         System.err.println("Missing xmlUrl argument on leaf outline: "+current.args.get("text"));
                         return;
                     }
 
-                    ArrayList<Long> readEntries = new ArrayList<Long>();
+                    ArrayList<Integer> readEntries = new ArrayList<Integer>();
                     if(current.args.containsKey("xpl:readEntries") && !current.args.get("xpl:readEntries").equals("")){
                         String[] hashList = current.args.get("xpl:readEntries").split(",");
                         for(String hash : hashList){
-                            readEntries.add(Long.parseLong(hash));
+                            readEntries.add(Integer.parseInt(hash, 16));
                         }
                     }
 
-                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl"), readEntries));
+                    node.setUserObject(new Feed(current.args.get("text"), current.args.get("xmlUrl"), readEntries, node));
                     node.setAllowsChildren(false);
                     tree.add(node);
                 }
                 else{
                     // Found a Category
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(current.args.get("text"));
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode();
                     node.setAllowsChildren(true);
                     tree.add(node);
 
@@ -221,6 +221,7 @@ public class FeedTree extends JTree{
                         String index = match.group(1);
                         opml2tree(node, current.children.get(Integer.parseInt(index)));
                     }
+                    node.setUserObject(new CompoundFeed(current.args.get("text"), node));
                     return;
                 }
             }
@@ -241,6 +242,12 @@ class FeedTreeModel extends DefaultTreeModel{
         super(root);
     }
 
+    /**
+     * Handling the renaming of labels in the feedtree so that the unread count
+     * remains intact.
+     * @param path The path to the node which is being changed
+     * @param newValue Expecting a String to have as a title for the treelabel
+     */
     @Override
         public void valueForPathChanged(TreePath path, Object newValue){
             DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
@@ -250,7 +257,6 @@ class FeedTreeModel extends DefaultTreeModel{
                 super.valueForPathChanged(path, temp);
             }
             else{
-                // Handles every case that isn't a feed, namely categories
                 super.valueForPathChanged(path, newValue);
             }
         }

@@ -9,6 +9,8 @@
  * so it's safe to say that no one has used this name before.
  */
 
+import java.io.*;
+import java.net.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -72,7 +74,7 @@ public class Reader{
             JTree tree;
             DefaultMutableTreeNode newNode;
             MutableTreeNode node;
-            
+
             String nodeName = JOptionPane.showInputDialog(null, "Enter the feed url, leave empty if creating a category:");
             if(nodeName == null)
                 // User cancelled
@@ -81,10 +83,23 @@ public class Reader{
             DefaultTreeModel model = (DefaultTreeModel)feedTree.getModel();
 
             if(!nodeName.equals("")){
+                try {
+                    URL url = new URL(nodeName);
+                    URLConnection conn = url.openConnection();
+                    conn.connect();
+                } catch (MalformedURLException ex) {
+                    JOptionPane.showMessageDialog(null, ex.toString(), "Error: Malformed URL", JOptionPane.ERROR_MESSAGE);
+                    return;
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(null, ex.toString(), "Error: Input/Output error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 newNode = new DefaultMutableTreeNode(new Feed(nodeName), false);
             }
             else{
-                newNode = new DefaultMutableTreeNode("NewCategory", true);
+                newNode = new DefaultMutableTreeNode(null, true);
+                newNode.setUserObject(new CompoundFeed("NewCategory", newNode));
             }
             //path = feedTree.getNextMatch("M", 0, Position.Bias.Forward);
             node = (MutableTreeNode)feedTree.getLastSelectedPathComponent();
@@ -133,16 +148,16 @@ public class Reader{
 
 class FirstTimeRendering extends WindowAdapter{
     @Override
-    public void windowOpened(WindowEvent e){
-        System.out.println("Window opened");
-        //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
-    }
+        public void windowOpened(WindowEvent e){
+            System.out.println("Window opened");
+            //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
+        }
 
     @Override
-    public void windowClosing(WindowEvent e){
-        System.out.println("Window closed");
-        FeedTree.init().saveToFile(null);
+        public void windowClosing(WindowEvent e){
+            System.out.println("Window closed");
+            FeedTree.init().saveToFile(null);
 
-        System.exit(0);
-    }
+            System.exit(0);
+        }
 }

@@ -15,6 +15,7 @@ class Entry{
     private LinkedList<Entry> revisions;
     private EntryPanel view;
     private Data data;
+    private Feed parent;
 
     /**
      * Convenient storage structure.
@@ -45,6 +46,7 @@ class Entry{
 
     public Entry(String title, String author, Tag summary, 
             String link, Date posted, Date updated, boolean read){
+        // TODO: remove this constructor if possible later
         data = new Data();
         data.title = title;
         data.author = author;
@@ -56,8 +58,10 @@ class Entry{
         view = new EntryPanel(this);
     }
 
-    public Entry(Tag current, int version){
+    public Entry(Tag current, int version, Feed parent){
+        this.parent = parent;
         data = initData(current, version);
+        data.read = parent.isRead(hashCode());
         view = new EntryPanel(this);
     }
 
@@ -78,13 +82,13 @@ class Entry{
         defTag.content = "No text";
 
         // Setting defaults
+        result.guid = "";
         result.title = "Unknown title";
         result.author = "";
         result.summary = defTag;
         result.link = "";
         result.posted = Calendar.getInstance().getTime();
         result.updated = Calendar.getInstance().getTime();
-        result.read = false;
 
         if(version == RSS2){
             for(Tag info : tags){
@@ -113,7 +117,7 @@ class Entry{
                 else if(info.name.equals("summary") || info.name.equals("content")){
                     result.summary = info;
                 }
-                else if(info.name.equals("updated")){
+                else if(info.name.equals("published")){
                     result.posted = parseRFC3339(info.content);
                 }
                 else if(info.name.equals("author")){
@@ -251,6 +255,9 @@ class Entry{
     public Date getPosted(){
         return data.posted; 
     }
+    public Date getUpdated(){
+        return data.updated; 
+    }
     public Tag getSummary(){
         return data.summary; 
     }
@@ -261,14 +268,22 @@ class Entry{
 
     public void doRead(){
         data.read = true;
+        parent.readEntry(hashCode());
     }
 
     public void unRead(){
         data.read = false;
+        parent.unreadEntry(hashCode());
     }
 
     public EntryPanel getView(){
         return view;
+    }
+
+    @Override
+    public int hashCode(){
+        if(!data.guid.equals("")) return data.guid.hashCode();
+        else return data.link.hashCode();
     }
 
     public boolean equals(Object other){
@@ -283,12 +298,12 @@ class Entry{
 
 class SortByPosted implements Comparator<Entry>{
     public int compare(Entry self, Entry other){
-        return 0;
+        return other.getPosted().compareTo(self.getPosted());
     }
 }
 
 class SortByUpdated implements Comparator<Entry>{
     public int compare(Entry self, Entry other){
-        return 0;
+        return self.getUpdated().compareTo(other.getUpdated());
     }
 }
