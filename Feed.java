@@ -20,7 +20,7 @@ class Feed{
     protected int hash;
     protected boolean inited;
 
-    public Feed(String xmlUrl){
+    public Feed(String xmlUrl, DefaultMutableTreeNode node){
         this.hash = 0;
         this.guid = "";
         this.title = "";
@@ -29,6 +29,7 @@ class Feed{
         this.description = "";
         this.entries = new LinkedList<Entry>();
         this.readEntries = new ArrayList<Integer>();
+        this.node = node;
         this.inited = false;
     }
     public Feed(String title, String xmlUrl, ArrayList<Integer> readEntries, DefaultMutableTreeNode node, int hash){
@@ -59,9 +60,13 @@ class Feed{
      * Loads the xmlfile for the first time
      */
     public void init(){
+        System.gc();
         if(!inited){
-            loadFile();
-            //update();
+            System.out.println("Inits "+title);
+            if(hash != 0)
+                loadFile();
+            else
+                update();
             inited = true;
         }
     }
@@ -74,6 +79,7 @@ class Feed{
         String filename = Integer.toString(hashCode())+".xml";
         Tag top = parser.parseLocal(filename);
         init(top);
+        top = null;
         unreadCount = entries.size() - readEntries.size();
         updateTreeNode();
     }
@@ -83,10 +89,16 @@ class Feed{
      */
     public void update(){
         Parser parser = new Parser();
+        System.out.println(xmlUrl);
         Tag top = parser.parse(xmlUrl);
         init(top);
+        top = null;
         unreadCount = entries.size() - readEntries.size();
         updateTreeNode();
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode)node.getParent();
+        if(parent != null){
+            ((CompoundFeed)parent.getUserObject()).updateTreeNode();
+        }
         // TODO: Insert cleaning code here
         saveToFile();
     }
@@ -174,6 +186,17 @@ class Feed{
         }
     }
 
+    /**
+     * Unloads the entries, use this to save heap space
+     */
+    public void unInit(){
+        System.out.println("Uninits "+title);
+        inited = false;
+        entries = null;
+        System.gc();
+        entries = new LinkedList<Entry>();
+    }
+
     public String getTitle(){
         return title;
     }
@@ -194,25 +217,17 @@ class Feed{
         return htmlUrl;
     }
 
+    public DefaultMutableTreeNode getNode(){
+        return node;
+    }
+
     public void readEntry(Integer entryHash){
         if(readEntries.contains(entryHash)){
             return;
         }
         readEntries.add(entryHash);
+        unreadCount = entries.size() - readEntries.size();
         updateTreeNode();
-    }
-
-    public void updateTreeNode(){
-        FeedTreeModel model = (FeedTreeModel)FeedTree.init().getModel();
-        LinkedList<DefaultMutableTreeNode> path = new LinkedList<DefaultMutableTreeNode>();
-
-        DefaultMutableTreeNode temp = node;
-        while (temp != null) {
-            path.addFirst(temp);
-            temp = (DefaultMutableTreeNode)temp.getParent();
-        }
-
-        model.valueForPathChanged(new TreePath(path.toArray()), getTitle());
     }
 
     public void unreadEntry(Integer entryHash){
@@ -221,12 +236,21 @@ class Feed{
         }
     }
 
+    public int getUnreadCount(){
+        return unreadCount;
+    }
+
     public boolean isRead(Integer entryHash){
         return readEntries.contains(entryHash);
     }
 
-    public int getUnreadCount(){
-        return unreadCount;
+    public void updateTreeNode(){
+        FeedTreeModel model = (FeedTreeModel)FeedTree.init().getModel();
+        model.nodeChanged(node);
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode)node.getParent();
+        if(parent != null){
+            ((CompoundFeed)parent.getUserObject()).updateTreeNode();
+        }
     }
 
     public void saveToFile(){

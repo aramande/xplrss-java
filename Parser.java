@@ -38,8 +38,11 @@ public class Parser{
 
         Tokenizer tokenizer = new Tokenizer();
         tokenizer.tokenize(text.toString());
+        text.setLength(0);
         tagNames = new Stack<String>();
         Tag parent = parseTokens(tokenizer);
+        tokenizer = null;
+
         return parent;
     }
     public Tag parse(String urlString){
@@ -63,6 +66,7 @@ public class Parser{
         }
         Tokenizer tokenizer = new Tokenizer();
         tokenizer.tokenize(buffer.toString());
+        buffer.setLength(0);
         tagNames = new Stack<String>();
         Tag parent = parseTokens(tokenizer);
         return parent;

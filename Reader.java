@@ -16,16 +16,21 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.tree.*;
 import javax.swing.text.*;
+import javax.swing.event.*;
 
-public class Reader{
+public class Reader implements TreeSelectionListener{
     // Settings
     private int splitSize = 170;
+    private JButton insertButton = new JButton("Insert");
+    private JButton deleteButton = new JButton("Delete");
+
 
     public Reader(){
         Window window = new Window("Xplrss", 800, 540);
         window.addWindowListener(new FirstTimeRendering());
 
         FeedTree feedTree = createFeedTree();
+        feedTree.addTreeSelectionListener(this);
         FeedList feedList = FeedList.init();
 
         JScrollPane scrollPane = new JScrollPane(feedTree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -39,8 +44,6 @@ public class Reader{
 
         JPanel treePane = new JPanel();
         JPanel buttonPane = new JPanel();
-        JButton insertButton = new JButton("Insert");
-        JButton deleteButton = new JButton("Delete");
 
         treePane.setLayout(new BorderLayout());
         treePane.add(scrollPane);
@@ -50,7 +53,9 @@ public class Reader{
         buttonPane.add(insertButton);
         buttonPane.add(deleteButton);
 
+        insertButton.setEnabled(false);
         insertButton.addActionListener(new InsertionListener(feedTree));
+        deleteButton.setEnabled(false);
         deleteButton.addActionListener(new DeletionListener(feedTree));
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treePane, scrollPane2);
@@ -95,7 +100,8 @@ public class Reader{
                     return;
                 }
 
-                newNode = new DefaultMutableTreeNode(new Feed(nodeName), false);
+                newNode = new DefaultMutableTreeNode(null, false);
+                newNode.setUserObject(new Feed(nodeName, newNode));
             }
             else{
                 newNode = new DefaultMutableTreeNode(null, true);
@@ -107,6 +113,7 @@ public class Reader{
                 node = (MutableTreeNode)node.getParent();
             }
             model.insertNodeInto(newNode, node, node.getChildCount());
+            ((Feed)newNode.getUserObject()).init();
         }
     }
 
@@ -141,6 +148,11 @@ public class Reader{
         return tree;
     }
 
+    public void valueChanged(TreeSelectionEvent e){
+        deleteButton.setEnabled(true);
+        insertButton.setEnabled(true);
+    }
+
     public static void main(String[] args){
         new Reader();
     }
@@ -154,10 +166,6 @@ class FirstTimeRendering extends WindowAdapter{
             DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
             CompoundFeed feed = (CompoundFeed)root.getUserObject();
             feed.init();
-            model.valueForPathChanged(new TreePath(root), "Feeds");
-            //feed.updateTreeNode();
-            
-            //FeedList.init().setFeed(new Feed("http://notch.tumblr.com/rss"));
         }
 
     @Override

@@ -29,11 +29,29 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
         return self;
     }
 
+    /**
+     * Help function to deduce if the first node is a descendant of the second node.
+     */
+    public static boolean isAncestor(TreeNode node, TreeNode ancestor){
+        System.out.println(node);
+        DefaultMutableTreeNode current = (DefaultMutableTreeNode)node;
+        while(current.getParent() != null){
+            System.out.println(current.getUserObject().toString());
+            current = (DefaultMutableTreeNode)current.getParent();
+            if(current.equals(ancestor)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Load the feed into the graphical interface.
+     */
     public void setFeed(Feed feed){
         currentFeed = feed;
         currentPage = 0;
-        // Reset the feedlist
+
         removeAll();
+        currentFeed.init();
 
         ListIterator<Entry> temp = currentFeed.getEntries();
         while(temp.hasNext()){
