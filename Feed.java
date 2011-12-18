@@ -7,7 +7,7 @@ import javax.swing.tree.*;
 /**
  * This is the data of a single feed that can be printed in the right area of the reader.
  */
-class Feed{
+class Feed implements Serializable{
     protected LinkedList<Entry> entries;
     protected ArrayList<Integer> readEntries;
     protected String xmlUrl;
@@ -64,9 +64,9 @@ class Feed{
         if(!inited){
             System.out.println("Inits "+title);
             if(hash != 0)
-                loadFile();
+                loadFile(new SortByPosted());
             else
-                update();
+                reload(new SortByPosted());
             inited = true;
         }
     }
@@ -74,32 +74,33 @@ class Feed{
     /**
      * Loads the xml-file that was cached on the computer.
      */
-    public void loadFile(){
+    public void loadFile(Comparator<Entry> sorting){
         Parser parser = new Parser();
         String filename = Integer.toString(hashCode())+".xml";
         Tag top = parser.parseLocal(filename);
-        init(top);
+        LinkedList<Entry> tempEntries = entries;
+        entries = new LinkedList<Entry>();
+        init(top, sorting, tempEntries);
+        entries.addAll(tempEntries);
         top = null;
-        unreadCount = entries.size() - readEntries.size();
-        updateTreeNode();
+
+        ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
     }
 
     /**
      * Updates the feed using the xmlUrl
      */
-    public void update(){
+    public void reload(Comparator<Entry> sorting){
         Parser parser = new Parser();
-        System.out.println(xmlUrl);
         Tag top = parser.parse(xmlUrl);
-        init(top);
+        LinkedList<Entry> tempEntries = entries;
+        entries = new LinkedList<Entry>();
+        init(top, sorting, tempEntries);
+        entries.addAll(tempEntries);
         top = null;
-        unreadCount = entries.size() - readEntries.size();
-        updateTreeNode();
-        DefaultMutableTreeNode parent = (DefaultMutableTreeNode)node.getParent();
-        if(parent != null){
-            ((CompoundFeed)parent.getUserObject()).updateTreeNode();
-        }
-        // TODO: Insert cleaning code here
+
+        ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
+
         saveToFile();
     }
 
@@ -107,21 +108,21 @@ class Feed{
      * Recursive function to go through the tag structure parsed by 
      * the parser and create the feed and its entries.
      */
-    private void init(Tag current){
+    private void init(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("rss")){
                 String version = current.args.get("version");
                 if(version.equals("2.0")){
-                    initRSS2(current);
+                    initRSS2(current, sorting, tempEntries);
                 }
                 else{
                     System.err.println("Warning: This RSS version ("+ current.args.get("version") +") is not yet fully supported, attempting to parse as RSS 3.0");
-                    initRSS2(current);
+                    initRSS2(current, sorting, tempEntries);
                 }
                 return;
             }
             if(current.name.equals("feed")){
-                initAtom(current);
+                initAtom(current, sorting, tempEntries);
                 return;
             }
 
@@ -131,23 +132,24 @@ class Feed{
 
         while(match.find()){
             String index = match.group(1);
-            init(current.children.get(Integer.parseInt(index)));
+            init(current.children.get(Integer.parseInt(index)), sorting, tempEntries);
         }
     }
-    private void initRSS2(Tag current){
+    private void initRSS2(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("item")){
-                entries.addLast(new Entry(current, Entry.RSS2, this));
+                Entry newEntry = new Entry(current, Entry.RSS2, this);
+                insertInto(newEntry, tempEntries, sorting);
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
-                title = current.content;
+                title = current.content.toString();
             }
             else if(current.name.equals("guid")){
-                guid = current.content;
+                guid = current.content.toString();
             }
             else if(current.name.equals("description")){
-                description = current.content;
+                description = current.content.toString();
             }
         }
 
@@ -156,24 +158,25 @@ class Feed{
 
         while(match.find()){
             String index = match.group(1);
-            initRSS2(current.children.get(Integer.parseInt(index)));
+            initRSS2(current.children.get(Integer.parseInt(index)), sorting, tempEntries);
         }
 
     }
-    private void initAtom(Tag current){
+    private void initAtom(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("entry")){
-                entries.addLast(new Entry(current, Entry.ATOM, this));
+                Entry newEntry = new Entry(current, Entry.ATOM, this);
+                insertInto(newEntry, tempEntries, sorting);
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
-                title = current.content;
+                title = current.content.toString();
             }
             else if(current.name.equals("id")){
-                guid = current.content;
+                guid = current.content.toString();
             }
             else if(current.name.equals("summary")){
-                description = current.content;
+                description = current.content.toString();
             }
         }
 
@@ -182,9 +185,42 @@ class Feed{
 
         while(match.find()){
             String index = match.group(1);
-            initAtom(current.children.get(Integer.parseInt(index)));
+            initAtom(current.children.get(Integer.parseInt(index)), sorting, tempEntries);
         }
     }
+
+    /**
+     * Automatically inserts newEntry into entries.
+     */
+    public void insertInto(Entry newEntry, LinkedList<Entry> tempEntries, Comparator<Entry> sorting){
+        while(true){
+            if(tempEntries.peek() == null){
+                entries.addLast(newEntry);
+                break;
+            }
+            Entry oldEntry = tempEntries.pop();
+            int sort = sorting.compare(oldEntry, newEntry);
+            if(sort < 0){
+                // Inserting new entry
+                entries.addLast(newEntry);
+                tempEntries.push(oldEntry);
+                break;
+            }
+            else if(sort > 0){
+                // Inserting old entry
+                entries.addLast(oldEntry);
+            }
+            else{
+                // Updating old entry
+                entries.addLast(newEntry);
+                if(oldEntry.isRead()){
+                    newEntry.doRead();
+                }
+                break;
+            }
+        }
+    }
+
 
     /**
      * Unloads the entries, use this to save heap space
@@ -226,14 +262,14 @@ class Feed{
             return;
         }
         readEntries.add(entryHash);
-        unreadCount = entries.size() - readEntries.size();
-        updateTreeNode();
+        ((Feed)(FeedTree.init().getRoot()).getUserObject()).updateTreeNode();
     }
 
     public void unreadEntry(Integer entryHash){
         if(readEntries.contains(entryHash)){
             readEntries.remove(entryHash);
         }
+        ((Feed)(FeedTree.init().getRoot()).getUserObject()).updateTreeNode();
     }
 
     public int getUnreadCount(){
@@ -246,11 +282,8 @@ class Feed{
 
     public void updateTreeNode(){
         FeedTreeModel model = (FeedTreeModel)FeedTree.init().getModel();
+        unreadCount = entries.size() - readEntries.size();
         model.nodeChanged(node);
-        DefaultMutableTreeNode parent = (DefaultMutableTreeNode)node.getParent();
-        if(parent != null){
-            ((CompoundFeed)parent.getUserObject()).updateTreeNode();
-        }
     }
 
     public void saveToFile(){

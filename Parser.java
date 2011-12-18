@@ -149,7 +149,9 @@ public class Parser{
                     tempTag.name = name;
                     tempTag.parent = currentTag;
 
-                    currentTag.content += "%" + currentTag.children.size() + " ";
+                    currentTag.content.append("%");
+                    currentTag.content.append(currentTag.children.size());
+                    currentTag.content.append(" ");
                     currentTag.children.add(tempTag);
                     currentTag = tempTag;                    
                     if(!token.identifier.equals(">")){
@@ -226,33 +228,34 @@ public class Parser{
             else{
                 // Clear out some extra spaces that was created by empty tags
                 if(!wasSpace && token.identifier.equals(" ")){
-                    currentTag.content += token.identifier;
+                    currentTag.content.append(token.identifier);
                     wasSpace = true;
                 }
                 else if(!token.identifier.equals(" ")){
-                    currentTag.content += token.identifier;
+                    currentTag.content.append(token.identifier);
                     wasSpace = false;
                 }
             }
         }
+        currentTag.content.trimToSize();
         return parent;
     }
 }
 
-class Tag{
+class Tag implements Serializable{
     public String name;
     public Tag parent;
     public ArrayList<Tag> children;
     public HashMap<String, String> args;
-    public String content;
+    public StringBuffer content;
 
     public Tag(){
         children = new ArrayList<Tag>();
         args = new HashMap<String, String>();
-        content = "";
+        content = new StringBuffer();
     }
 
     public String toString(){
-        return content;
+        return content.toString();
     }
 }

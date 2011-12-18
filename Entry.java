@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 import java.text.*;
@@ -5,7 +6,7 @@ import java.text.*;
 /**
  * Data representation of an entry in a feed
  */
-class Entry{
+class Entry implements Serializable{
     public static final int RSS9 = 0;
     public static final int RSS91 = 1;
     public static final int RSS92 = 2;
@@ -20,7 +21,7 @@ class Entry{
     /**
      * Convenient storage structure.
      */
-    class Data{
+    class Data implements Serializable{
         public String guid;
         public String title;
         public String author;
@@ -79,7 +80,7 @@ class Entry{
         ArrayList<Tag> tags = current.children;
         Data result = new Data();
         Tag defTag = new Tag();
-        defTag.content = "No text";
+        defTag.content.append("No text");
 
         // Setting defaults
         result.guid = "";
@@ -93,32 +94,32 @@ class Entry{
         if(version == RSS2){
             for(Tag info : tags){
                 if(info.name.equals("title")){
-                    result.title = info.content;
+                    result.title = info.content.toString();
                 }
                 else if(info.name.equals("description")){
                     result.summary = info;
                 }
                 else if(info.name.equals("pubDate")){
-                    result.posted = parseRFC822(info.content);
+                    result.posted = parseRFC822(info.content.toString());
                 }
                 else if(info.name.equals("author")){
-                    result.author = info.content;
+                    result.author = info.content.toString();
                 }
                 else if(info.name.equals("link")){
-                    result.link = info.content;
+                    result.link = info.content.toString();
                 }
             }
         }
         else if(version == ATOM){
             for(Tag info : tags){
                 if(info.name.equals("title")){
-                    result.title = info.content;
+                    result.title = info.content.toString();
                 }
                 else if(info.name.equals("summary") || info.name.equals("content")){
                     result.summary = info;
                 }
                 else if(info.name.equals("published")){
-                    result.posted = parseRFC3339(info.content);
+                    result.posted = parseRFC3339(info.content.toString());
                 }
                 else if(info.name.equals("author")){
                     handleAuthor(result, info);
@@ -141,7 +142,7 @@ class Entry{
     private void handleAuthor(Data result, Tag current){
         if(current.name != null){
             if(current.name.equals("name")){
-                result.author = current.content;
+                result.author = current.content.toString();
             }
         }
         Pattern pattern = Pattern.compile("%([0-9]+) ");
@@ -298,12 +299,16 @@ class Entry{
 
 class SortByPosted implements Comparator<Entry>{
     public int compare(Entry self, Entry other){
-        return other.getPosted().compareTo(self.getPosted());
+        if(self == null) return -1;
+        if(other == null) return 1;
+        return self.getPosted().compareTo(other.getPosted());
     }
 }
 
 class SortByUpdated implements Comparator<Entry>{
     public int compare(Entry self, Entry other){
+        if(self == null) return -1;
+        if(other == null) return 1;
         return self.getUpdated().compareTo(other.getUpdated());
     }
 }

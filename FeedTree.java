@@ -1,5 +1,8 @@
 import java.io.*;
+import java.awt.*;
+import java.awt.dnd.*;
 import java.util.*;
+import java.util.List;
 import java.util.regex.*;
 import javax.swing.*;
 import javax.swing.tree.*;
@@ -17,15 +20,18 @@ public class FeedTree extends JTree{
         super();
         opmlFile = "xplrss.opml";
         setEditable(true);
+        setDropMode(DropMode.ON_OR_INSERT);
+
         expanded = new ArrayList<TreePath>();
         DefaultMutableTreeNode treeNode = createFeedTree();
         setModel(new FeedTreeModel(treeNode));
         addTreeSelectionListener(FeedList.init());
 
+        DragAndDrop drag = new DragAndDrop(this, this, DnDConstants.ACTION_MOVE);
+
         for(TreePath path : expanded){
             expandPath(path);
         }
-        //System.out.println(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
     }
 
     public static FeedTree init(){
@@ -51,6 +57,14 @@ public class FeedTree extends JTree{
     }
 
     /**
+     * A shortcut to the root of the tree.
+     */
+    public DefaultMutableTreeNode getRoot(){
+        return (DefaultMutableTreeNode)getModel().getRoot();
+    }
+
+
+    /**
      * Saves the entire tree structure to file, overwriting the previous file.
      * @param newOpmlFile This is the 'Save as'-file, use null if you want to
      * use the previously loaded file. 
@@ -61,7 +75,7 @@ public class FeedTree extends JTree{
             FileWriter writer = new FileWriter(file);
             BufferedWriter out = new BufferedWriter(writer);
 
-            out.write(tree2opml((DefaultMutableTreeNode)getModel().getRoot(), 0));
+            out.write(tree2opml(getRoot(), 0));
 
             out.close();
         }
@@ -263,3 +277,69 @@ class FeedTreeModel extends DefaultTreeModel{
             }
         }
 }
+
+/*@Override
+  public boolean canImport(JComponent comp, DataFlavor[] transferFlavors){
+  return true;
+  }
+
+//@SuppressWarnings("unchecked")
+//@Override
+public boolean importData(JComponent comp, Transferable t){
+System.out.println("Importing data");
+if(!canImport(comp, t.getTransferDataFlavors())){
+return false;
+}
+JTree tree = (JTree) comp;
+List<DefaultMutableTreeNode> data = null;
+TransferSupport support = new TransferSupport(comp, t);
+
+Point dropPoint = support.getDropLocation().getDropPoint();
+TreePath path = tree.getPathForLocation(dropPoint.x, dropPoint.y);
+DefaultMutableTreeNode parent = (DefaultMutableTreeNode) path.getLastPathComponent();
+System.out.println("Heeere's Johnny!");
+
+            try {
+                data = (List) t.getTransferData(NodesTransferable.getDataFlavor());
+                Iterator i = data.iterator();
+                while (i.hasNext()) {
+                    File f = (File) i.next();
+                    parent.add(new DefaultMutableTreeNode(f.getName()));
+                }
+            }
+            catch(UnsupportedFlavorException e){
+                System.err.println(e);
+            } 
+            catch(IOException e){
+                System.err.println(e);
+            }
+
+            DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
+            model.reload();
+            return true;
+        }
+
+    //@Override
+        public int getSourceActions(JComponent comp) {
+            return MOVE;
+        }
+
+    /**
+     * This piece of code was taken from
+     * http://stackoverflow.com/questions/4595998/subclass-of-treenode-dnd-issue
+     * All rights belong to Denis Tulskiy.
+     *
+    //@Override
+        public Transferable createTransferable(JComponent comp) {
+            if(comp instanceof FeedTree){
+                FeedTree tree = (FeedTree)comp;
+                TreePath[] paths = tree.getSelectionPaths();
+                ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
+                for (TreePath path : tree.getSelectionPaths()) {
+                    DefaultMutableTreeNode component = (DefaultMutableTreeNode) path.getLastPathComponent();
+                    nodes.add(component);
+                }
+                return new NodesTransferable(nodes);
+            }
+            return null;
+        }*/

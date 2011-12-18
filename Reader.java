@@ -64,6 +64,7 @@ public class Reader implements TreeSelectionListener{
         splitPane.setDividerLocation(splitSize);
         window.add(splitPane, BorderLayout.CENTER);
 
+
         window.pack();
         window.setVisible(true);
     }
@@ -114,6 +115,12 @@ public class Reader implements TreeSelectionListener{
             }
             model.insertNodeInto(newNode, node, node.getChildCount());
             ((Feed)newNode.getUserObject()).init();
+
+            SwingUtilities.invokeLater(new Runnable(){
+                public void run(){
+                    FeedTree.init().saveToFile(null);
+                }
+            });
         }
     }
 
@@ -139,6 +146,12 @@ public class Reader implements TreeSelectionListener{
                 // User clicked yes
                 model.removeNodeFromParent(node);
             }
+
+            SwingUtilities.invokeLater(new Runnable(){
+                public void run(){
+                    FeedTree.init().saveToFile(null);
+                }
+            });
         }
     }
 
@@ -166,6 +179,10 @@ class FirstTimeRendering extends WindowAdapter{
             DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
             CompoundFeed feed = (CompoundFeed)root.getUserObject();
             feed.init();
+
+            AutomaticReload reload = new AutomaticReload();
+            reload.start();
+
         }
 
     @Override
@@ -174,5 +191,21 @@ class FirstTimeRendering extends WindowAdapter{
             FeedTree.init().saveToFile(null);
 
             System.exit(0);
+        }
+}
+
+class AutomaticReload extends Thread{
+    @Override
+        public void run(){
+            while(true){
+                try{
+                    sleep(1000*60);
+                    System.out.println("Reloading!");
+                    ((Feed)FeedTree.init().getRoot().getUserObject()).reload(new SortByPosted());
+                }
+                catch(InterruptedException e){
+                    System.out.println(e);
+                }
+            }
         }
 }
