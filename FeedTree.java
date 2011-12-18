@@ -49,7 +49,14 @@ public class FeedTree extends JTree{
         DefaultMutableTreeNode top = new DefaultMutableTreeNode("Feeds");
         top.setUserObject(new CompoundFeed("Feeds", top));
         Parser p = new Parser();
-        Tag tags = p.parseLocal(opmlFile);
+        Tag tags = null;
+        try{
+            tags = p.parseLocal(opmlFile);
+        }
+        catch(FileNotFoundException e){
+            System.out.println("Error: Couldn't find the OPML file: "+opmlFile);
+            return top;
+        }
         if(tags != null){
             opml2tree(top, tags);
         }

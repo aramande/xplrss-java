@@ -3,37 +3,31 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 public class Parser{
-    public Tag parseLocal(String filename){
+    public Tag parseLocal(String filename) throws FileNotFoundException{
         StringBuffer text = null;
         BufferedReader reader = null;
+        text = new StringBuffer(1024);
+        reader = new BufferedReader(new FileReader(filename));
         try{
-            text = new StringBuffer(1024);
-            reader = new BufferedReader(new FileReader(filename));
-            try{
-                char[] buf = new char[512];
-                int numRead=0;
-                while((numRead=reader.read(buf)) != -1){
-                    String read = String.valueOf(buf, 0, numRead);
-                    text.append(read);
-                    buf = new char[512];
-                }
-            }
-            catch(IOException e){
-                System.err.println("Error: Could not read file, "+ filename);
-                return null;
-            }
-            finally{
-                try{
-                    reader.close();
-                }
-                catch(IOException e){
-                    // Ignore
-                }
+            char[] buf = new char[512];
+            int numRead=0;
+            while((numRead=reader.read(buf)) != -1){
+                String read = String.valueOf(buf, 0, numRead);
+                text.append(read);
+                buf = new char[512];
             }
         }
-        catch(FileNotFoundException e){
-            System.err.println("Warning: No such file, "+ filename);
+        catch(IOException e){
+            System.err.println("Error: Could not read file, "+ filename);
             return null;
+        }
+        finally{
+            try{
+                reader.close();
+            }
+            catch(IOException e){
+                // Ignore
+            }
         }
 
         Tokenizer tokenizer = new Tokenizer();
@@ -76,8 +70,7 @@ public class Parser{
      * Example tag parsing function that just returns all the text from the
      * webpage. 
      */
-    private String getTagStructure(Tag current){
-        String site = "";
+    public static String getTagStructure(Tag current){
         Pattern pattern = Pattern.compile("%([0-9]+) ");
         Matcher match = pattern.matcher(current.content);
         StringBuffer sb = new StringBuffer(current.content.length());
@@ -89,7 +82,6 @@ public class Parser{
         match.appendTail(sb);
         return sb.toString();
     }
-
 
     private Stack<String> tagNames;
     /**
@@ -106,11 +98,13 @@ public class Parser{
         parent = new Tag();
         currentTag = parent;
         boolean wasSpace = true;
+        boolean stop = false;
+        int index = tokenizer.getIndex();
         while(true){
             if((token = tokenizer.nextToken()) == null){
                 break;
             }
-            if(token.identifier.equals("<")){
+            if(token.identifier.equals("<") && token.type==Type.SYMBOL){
                 token = tokenizer.nextToken();
                 if(token.identifier.equals("/")){
                     // Found opening of end tag
@@ -129,8 +123,24 @@ public class Parser{
                     }
                 }
                 else if(token.identifier.equals("!")){
+                    token = tokenizer.nextToken();
+                    if(token.identifier.equals("[")){
+                        token = tokenizer.nextToken();
+                        if(!token.identifier.equals("CDATA")){
+                            continue;
+                        }
+                        token = tokenizer.nextToken();
+                        if(!token.identifier.equals("[")){
+                            continue;
+                        }
+                        for(Token tempToken : tokenizer.listTokensTo("]")){
+                            currentTag.content.append(tempToken.identifier);
+                            token = tokenizer.nextToken();
+                        }
+                        tokenizer.nextTokenOf("]");
+                        tokenizer.nextTokenOf(">");
+                    }
                     // Found opening of comment tag, ignore comments
-                    token = tokenizer.nextTokenOf(">");
                 }
                 else if(token.type == Type.ALPHA){
                     // Found opening of start tag
@@ -207,7 +217,6 @@ public class Parser{
                                 // slash in the tag that does not belong to a
                                 // value.
                                 if(tagNames.peek().equals(name)){
-                                    //System.out.println("Oneline popping tag " + tagNames.peek());
                                     tagNames.pop();
                                     currentTag = currentTag.parent;
                                 }

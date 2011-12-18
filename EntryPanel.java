@@ -3,6 +3,7 @@ import java.awt.*;
 import java.net.*;
 import java.awt.event.*;
 import java.text.*;
+import java.util.regex.*;
 import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.event.*;
@@ -10,7 +11,7 @@ import javax.swing.event.*;
 /**
  * Graphical reptresentation of an entry to be listed by the FeedList.
  */
-public class EntryPanel extends JPanel implements MouseListener, DocumentListener{
+public class EntryPanel extends JPanel implements MouseListener{
     private boolean maximized;
     private Entry entry;
     private JTextPane titlePane, datePane, contentPane;
@@ -193,7 +194,8 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
 
                 date.insertString(date.getLength(), dateFormat.format(entry.getPosted())+" ", sc.getStyle("dateFont"));
 
-                content.insertString(content.getLength(), entry.getSummary().toString(), sc.getStyle("textFont"));
+                String temp = getTagStructure(entry.getSummary());
+                content.insertString(content.getLength(), temp, sc.getStyle("textFont"));
             }
             catch(BadLocationException e){
                 System.err.println(e);
@@ -218,6 +220,21 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
                 System.err.println(e);
             }
         }
+    }
+
+    private String getTagStructure(Tag current){
+        String site = "";
+        Pattern pattern = Pattern.compile("%([0-9]+) ");
+        Matcher match = pattern.matcher(current.content+" ");
+        StringBuffer sb = new StringBuffer(current.content.length());
+        while(match.find()){
+            System.out.println(current.children.get(0).content);
+            String index = match.group(1);
+            String text = getTagStructure(current.children.get(Integer.parseInt(index)));
+            match.appendReplacement(sb, Matcher.quoteReplacement(text));
+        }
+        match.appendTail(sb);
+        return sb.toString();
     }
 
     /**
@@ -271,15 +288,6 @@ public class EntryPanel extends JPanel implements MouseListener, DocumentListene
         FeedList.init().selectEntry(this);
     }
     public void mouseClicked(MouseEvent e){
-    }
-    public void changedUpdate(DocumentEvent e){
-        System.out.println("Document was changed");
-    }
-    public void insertUpdate(DocumentEvent e){
-        System.out.println("Document was inserted into");
-    }
-    public void removeUpdate(DocumentEvent e){
-        System.out.println("Document was removed from");
     }
 }
 

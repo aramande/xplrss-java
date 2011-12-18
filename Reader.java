@@ -115,6 +115,7 @@ public class Reader implements TreeSelectionListener{
             }
             model.insertNodeInto(newNode, node, node.getChildCount());
             ((Feed)newNode.getUserObject()).init();
+            ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
 
             SwingUtilities.invokeLater(new Runnable(){
                 public void run(){
@@ -144,7 +145,9 @@ public class Reader implements TreeSelectionListener{
 
             if(answer == 0){
                 // User clicked yes
+                ((Feed)node.getUserObject()).unInit();
                 model.removeNodeFromParent(node);
+                ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
             }
 
             SwingUtilities.invokeLater(new Runnable(){
@@ -162,6 +165,7 @@ public class Reader implements TreeSelectionListener{
     }
 
     public void valueChanged(TreeSelectionEvent e){
+        // TODO: Disable button when deselected
         deleteButton.setEnabled(true);
         insertButton.setEnabled(true);
     }
@@ -201,10 +205,16 @@ class AutomaticReload extends Thread{
                 try{
                     sleep(1000*60);
                     System.out.println("Reloading!");
-                    ((Feed)FeedTree.init().getRoot().getUserObject()).reload(new SortByPosted());
+                    DefaultMutableTreeNode root = FeedTree.init().getRoot();
+                    ((Feed)root.getUserObject()).reload(new SortByPosted());
+                    //Not working vvv, implement later?
+                    //FeedList.init().renderFeed(true, true);
                 }
                 catch(InterruptedException e){
-                    System.out.println(e);
+                    System.err.println(e);
+                }
+                catch(NullPointerException e){
+                    System.err.println(e);
                 }
             }
         }

@@ -87,7 +87,7 @@ public class DragAndDrop implements DragSourceListener, DragGestureListener, Dro
             JTree tree = (JTree)targetContext.getComponent();
             TreePath parentpath = tree.getClosestPathForLocation(pt.x, pt.y);
             DefaultMutableTreeNode parent = (DefaultMutableTreeNode)parentpath.getLastPathComponent(); //(DefaultMutableTreeNode)getNodeForEvent(e);
-            if(parent.isLeaf()){
+            if(!parent.getAllowsChildren()){
                 e.rejectDrop();
                 return;
             }

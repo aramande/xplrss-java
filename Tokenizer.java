@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.regex.*;
 public class Tokenizer{
     ArrayList<Token> tokens = new ArrayList<Token>();
     int currentToken;
@@ -156,6 +157,10 @@ public class Tokenizer{
         currentToken = index;
     }
 
+    public int getIndex(){
+        return currentToken;
+    }
+
     /**
      * Get token by id.
      */
@@ -163,7 +168,21 @@ public class Tokenizer{
         return tokens.get(index);
     }
 
+    private String handleFaultyHtml(String content){
+        Pattern pattern = Pattern.compile("&lt;([^&]*?)&gt;");
+        Matcher match = pattern.matcher(content);
+        StringBuffer sb = new StringBuffer(content.length());
+        while(match.find()){
+            String tagString = match.group(1);
+            String text = "<"+tagString+">";
+            match.appendReplacement(sb, Matcher.quoteReplacement(text));
+        }
+        match.appendTail(sb);
+        return sb.toString();
+    }
+
     public void tokenize(String input){
+        input = handleFaultyHtml(input);
         char[] buffer = scan(input);
         int tmpIndex;
         for(int i=0; i<buffer.length; ++i){

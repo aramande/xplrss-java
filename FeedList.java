@@ -119,7 +119,6 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
                     saved = ((EntryPanel)entries[i]);
                     first = false;
                 }
-
                 if(render)
                     ((EntryPanel)entries[i]).render();
 

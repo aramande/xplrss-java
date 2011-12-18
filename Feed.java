@@ -63,8 +63,14 @@ class Feed implements Serializable{
         System.gc();
         if(!inited){
             System.out.println("Inits "+title);
-            if(hash != 0)
-                loadFile(new SortByPosted());
+            if(hash != 0){
+                try{
+                    loadFile(new SortByPosted());
+                } 
+                catch(FileNotFoundException e){
+                    reload(new SortByPosted());
+                }
+            }
             else
                 reload(new SortByPosted());
             inited = true;
@@ -74,7 +80,7 @@ class Feed implements Serializable{
     /**
      * Loads the xml-file that was cached on the computer.
      */
-    public void loadFile(Comparator<Entry> sorting){
+    public void loadFile(Comparator<Entry> sorting) throws FileNotFoundException{
         Parser parser = new Parser();
         String filename = Integer.toString(hashCode())+".xml";
         Tag top = parser.parseLocal(filename);
@@ -98,8 +104,6 @@ class Feed implements Serializable{
         init(top, sorting, tempEntries);
         entries.addAll(tempEntries);
         top = null;
-
-        ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
 
         saveToFile();
     }
@@ -143,13 +147,13 @@ class Feed implements Serializable{
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
-                title = current.content.toString();
+                title = Parser.getTagStructure(current);
             }
             else if(current.name.equals("guid")){
-                guid = current.content.toString();
+                guid = Parser.getTagStructure(current);
             }
             else if(current.name.equals("description")){
-                description = current.content.toString();
+                description = Parser.getTagStructure(current);
             }
         }
 
@@ -170,13 +174,13 @@ class Feed implements Serializable{
                 return;
             }
             else if(title.equals("") && current.name.equals("title")){
-                title = current.content.toString();
+                title = Parser.getTagStructure(current);
             }
             else if(current.name.equals("id")){
-                guid = current.content.toString();
+                guid = Parser.getTagStructure(current);
             }
             else if(current.name.equals("summary")){
-                description = current.content.toString();
+                description = Parser.getTagStructure(current);
             }
         }
 
@@ -298,7 +302,7 @@ class Feed implements Serializable{
             out.close();
         }
         catch(IOException e){
-            System.out.println("Couldn't write to file: "+file);
+            System.err.println("Couldn't write to file: "+file);
         }
     }
 
@@ -315,12 +319,56 @@ class Feed implements Serializable{
             result += "\t\t\t<title>" + entry.getTitle() + "</title>\n";
             result += "\t\t\t<link>" + entry.getLink() + "</link>\n";
             result += "\t\t\t<author>" + entry.getAuthor() + "</author>\n";
-            result += "\t\t\t<description>" + entry.getSummary() + "</description>\n";
+            if(entry.getSummary().children.size() != 0){
+                result += "\t\t\t<description>" + tag2string(entry.getSummary()) + "</description>\n";
+            }
+            else{
+                result += "\t\t\t<description>" + entry.getSummary() + "</description>\n";
+            }
             result += "\t\t\t<pubDate>" + s.format(entry.getPosted()) + "</pubDate>\n";
             result += "\t\t</item>\n";
         }
         result += "\t</channel>\n</rss>";
         return result;
+    }
+
+    private String tag2string(Tag tag){
+        Pattern pattern = Pattern.compile("%([0-9]+) ");
+        Matcher match = pattern.matcher(tag.content);
+        StringBuffer sb = new StringBuffer(tag.content.length());
+
+        if(tag.children.size() > 0 || !tag.content.equals("")){
+            if(!tag.name.equals("content")
+                    && !tag.name.equals("description")
+                    && !tag.name.equals("summary")){
+
+                while(match.find()){
+                    String index = match.group(1);
+                    String text = "";
+                    Tag child = tag.children.get(Integer.parseInt(index));
+                    text += "<" + child.name + ">";
+                    text += tag2string(child);
+                    text += "</" + child.name + ">";
+                    match.appendReplacement(sb, Matcher.quoteReplacement(text));
+                }
+                match.appendTail(sb);
+
+            }
+            else{
+                while(match.find()){
+                    String index = match.group(1);
+                    String text = tag2string(tag.children.get(Integer.parseInt(index)));
+                    match.appendReplacement(sb, Matcher.quoteReplacement(text));
+                }
+            }
+        }
+        else{
+            sb.append("<");
+            sb.append(tag.name);
+            sb.append("/>");
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -363,7 +411,8 @@ class Feed implements Serializable{
     public int hashCode(){
         if(hash != 0) return hash;
         if(!guid.equals("")) return guid.hashCode();
-        else return description.hashCode();
+        if(!description.equals("")) return description.hashCode();
+        else return title.hashCode();
     }
 
     /**
