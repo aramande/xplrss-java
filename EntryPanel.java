@@ -228,7 +228,6 @@ public class EntryPanel extends JPanel implements MouseListener{
         Matcher match = pattern.matcher(current.content+" ");
         StringBuffer sb = new StringBuffer(current.content.length());
         while(match.find()){
-            System.out.println(current.children.get(0).content);
             String index = match.group(1);
             String text = getTagStructure(current.children.get(Integer.parseInt(index)));
             match.appendReplacement(sb, Matcher.quoteReplacement(text));

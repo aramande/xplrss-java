@@ -25,6 +25,7 @@ public class FeedTree extends JTree{
         expanded = new ArrayList<TreePath>();
         DefaultMutableTreeNode treeNode = createFeedTree();
         setModel(new FeedTreeModel(treeNode));
+        addMouseListener(new TreeBindings());
         addTreeSelectionListener(FeedList.init());
 
         DragAndDrop drag = new DragAndDrop(this, this, DnDConstants.ACTION_MOVE);
@@ -285,68 +286,3 @@ class FeedTreeModel extends DefaultTreeModel{
         }
 }
 
-/*@Override
-  public boolean canImport(JComponent comp, DataFlavor[] transferFlavors){
-  return true;
-  }
-
-//@SuppressWarnings("unchecked")
-//@Override
-public boolean importData(JComponent comp, Transferable t){
-System.out.println("Importing data");
-if(!canImport(comp, t.getTransferDataFlavors())){
-return false;
-}
-JTree tree = (JTree) comp;
-List<DefaultMutableTreeNode> data = null;
-TransferSupport support = new TransferSupport(comp, t);
-
-Point dropPoint = support.getDropLocation().getDropPoint();
-TreePath path = tree.getPathForLocation(dropPoint.x, dropPoint.y);
-DefaultMutableTreeNode parent = (DefaultMutableTreeNode) path.getLastPathComponent();
-System.out.println("Heeere's Johnny!");
-
-            try {
-                data = (List) t.getTransferData(NodesTransferable.getDataFlavor());
-                Iterator i = data.iterator();
-                while (i.hasNext()) {
-                    File f = (File) i.next();
-                    parent.add(new DefaultMutableTreeNode(f.getName()));
-                }
-            }
-            catch(UnsupportedFlavorException e){
-                System.err.println(e);
-            } 
-            catch(IOException e){
-                System.err.println(e);
-            }
-
-            DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
-            model.reload();
-            return true;
-        }
-
-    //@Override
-        public int getSourceActions(JComponent comp) {
-            return MOVE;
-        }
-
-    /**
-     * This piece of code was taken from
-     * http://stackoverflow.com/questions/4595998/subclass-of-treenode-dnd-issue
-     * All rights belong to Denis Tulskiy.
-     *
-    //@Override
-        public Transferable createTransferable(JComponent comp) {
-            if(comp instanceof FeedTree){
-                FeedTree tree = (FeedTree)comp;
-                TreePath[] paths = tree.getSelectionPaths();
-                ArrayList<TreeNode> nodes = new ArrayList<TreeNode>();
-                for (TreePath path : tree.getSelectionPaths()) {
-                    DefaultMutableTreeNode component = (DefaultMutableTreeNode) path.getLastPathComponent();
-                    nodes.add(component);
-                }
-                return new NodesTransferable(nodes);
-            }
-            return null;
-        }*/

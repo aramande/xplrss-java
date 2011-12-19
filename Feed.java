@@ -60,7 +60,6 @@ class Feed implements Serializable{
      * Loads the xmlfile for the first time
      */
     public void init(){
-        System.gc();
         if(!inited){
             System.out.println("Inits "+title);
             if(hash != 0){
@@ -75,6 +74,7 @@ class Feed implements Serializable{
                 reload(new SortByPosted());
             inited = true;
         }
+        System.gc();
     }
 
     /**
@@ -91,6 +91,7 @@ class Feed implements Serializable{
         top = null;
 
         ((Feed)FeedTree.init().getRoot().getUserObject()).updateTreeNode();
+        System.gc();
     }
 
     /**
@@ -106,6 +107,7 @@ class Feed implements Serializable{
         top = null;
 
         saveToFile();
+        System.gc();
     }
 
     /**
@@ -267,6 +269,12 @@ class Feed implements Serializable{
         }
         readEntries.add(entryHash);
         ((Feed)(FeedTree.init().getRoot()).getUserObject()).updateTreeNode();
+    }
+
+    public void readAll(){
+        for(Entry entry : entries){
+            entry.doRead();
+        }
     }
 
     public void unreadEntry(Integer entryHash){
