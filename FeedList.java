@@ -33,10 +33,8 @@ class FeedList extends JPanel implements TreeSelectionListener, ComponentListene
      * Help function to deduce if the first node is a descendant of the second node.
      */
     public static boolean isAncestor(TreeNode node, TreeNode ancestor){
-        System.out.println(node);
         DefaultMutableTreeNode current = (DefaultMutableTreeNode)node;
         while(current.getParent() != null){
-            System.out.println(current.getUserObject().toString());
             current = (DefaultMutableTreeNode)current.getParent();
             if(current.equals(ancestor)) return true;
         }

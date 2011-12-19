@@ -168,22 +168,45 @@ public class Tokenizer{
         return tokens.get(index);
     }
 
-    private String handleFaultyHtml(String content){
-        Pattern pattern = Pattern.compile("&lt;([^&]*?)&gt;");
-        Matcher match = pattern.matcher(content);
-        StringBuffer sb = new StringBuffer(content.length());
-        while(match.find()){
-            String tagString = match.group(1);
-            String text = "<"+tagString+">";
-            match.appendReplacement(sb, Matcher.quoteReplacement(text));
+    private char[] cleanHtml(char[] content){
+        int index = 0;
+        final int size = 4;
+        StringBuffer result = new StringBuffer(content.length);
+        result.append(content);
+        result.trimToSize();
+
+        while(index < result.length()){
+            int rightEnd = result.indexOf("&gt;", index);
+            if(rightEnd == -1){
+                return result.toString().toCharArray();
+            }
+            StringBuffer temp = new StringBuffer(result.substring(index, rightEnd));
+            int leftEnd = temp.lastIndexOf("&lt;");
+            if(leftEnd != -1){
+                int other = temp.lastIndexOf(">");
+                if(other > leftEnd){
+                    index = leftEnd+index+size;
+                    continue;
+                }
+                other = temp.lastIndexOf("<");
+                if(other > leftEnd){
+                    index = leftEnd+index+size;
+                    continue;
+                }
+                result.replace(rightEnd, rightEnd + size, ">");
+                result.replace(leftEnd + index, leftEnd + index + size, "<");
+                index = leftEnd;
+            }
+            else{
+                index = rightEnd+1;
+            }
         }
-        match.appendTail(sb);
-        return sb.toString();
+        return result.toString().toCharArray();
     }
 
     public void tokenize(String input){
-        input = handleFaultyHtml(input);
         char[] buffer = scan(input);
+        buffer = cleanHtml(buffer);
         int tmpIndex;
         for(int i=0; i<buffer.length; ++i){
             if(buffer[i] == '\0')
@@ -259,7 +282,7 @@ fromStart:
     private char[] scan(String input){
         char[] text = input.toCharArray();
         char[] buffer = new char[text.length];
-        boolean scannedSpace = false;;
+        boolean scannedSpace = false;
         // Scanning the site and removing all newlines, and reducing all spaces
         // to one.
         for(int i=0, x=0; i<text.length; ++i){
