@@ -78,8 +78,10 @@ public class FeedTree extends JTree{
      * use the previously loaded file. 
      */
     public void saveToFile(String newOpmlFile){
-        String file = (newOpmlFile == null) ? opmlFile : newOpmlFile;
+        String filename = (newOpmlFile == null) ? opmlFile : newOpmlFile;
+        File file = null;
         try{
+            file = new File(Settings.getSaveDirectory(), filename);
             FileWriter writer = new FileWriter(file);
             BufferedWriter out = new BufferedWriter(writer);
 

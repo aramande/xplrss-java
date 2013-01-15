@@ -7,7 +7,8 @@ public class Parser{
         StringBuffer text = null;
         BufferedReader reader = null;
         text = new StringBuffer(1024);
-        reader = new BufferedReader(new FileReader(filename));
+        File file = new File(Settings.getSaveDirectory(), filename);
+        reader = new BufferedReader(new FileReader(file));
         try{
             char[] buf = new char[512];
             int numRead=0;
@@ -18,7 +19,7 @@ public class Parser{
             }
         }
         catch(IOException e){
-            System.err.println("Error: Could not read file, "+ filename);
+            System.err.println("Error: Could not read file, " + file);
             return null;
         }
         finally{
@@ -92,7 +93,7 @@ public class Parser{
      *
      * @return First Tag in the structure.
      */
-    private Tag parseTokens(Tokenizer tokenizer){
+    public Tag parseTokens(Tokenizer tokenizer){
         Token token;
         Tag parent, currentTag;
         parent = new Tag();

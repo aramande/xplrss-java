@@ -136,7 +136,6 @@ public class EntryPanel extends JPanel implements MouseListener{
 
     /**
      * Resizes the entrypanel's textpanes so they wordwrap properly.
-     * If width is 0, preferred width of the pane is used.
      */
     public void resize(){
         // Get width of the viewport

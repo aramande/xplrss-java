@@ -15,13 +15,18 @@ public class TreeBindings extends MouseAdapter{
 
         switch(e.getButton()){
             case MouseEvent.BUTTON2:
-                int answer = JOptionPane.showConfirmDialog(null, "Are you sure you want to mark\nall the entries in this feed as read?\n\nThis confirmation can be turned off in settings.", "Mark all as read", JOptionPane.YES_NO_OPTION);
-                if(answer == 0){
+                if(Settings.warnForReadAll()){
+                    int answer = JOptionPane.showConfirmDialog(null, "Are you sure you want to mark\nall the entries in this feed as read?\n\nThis confirmation can be turned off in settings.", "Mark all as read", JOptionPane.YES_NO_OPTION);
+                    if(answer == 0){
+                        feed.readAll();
+                    }
+                }
+                else{
                     feed.readAll();
                 }
                 break;
             case MouseEvent.BUTTON3:
-                feed.reload(new SortByPosted());
+                feed.reload(Settings.getSorting());
                 break;
         }
     }

@@ -64,14 +64,14 @@ class Feed implements Serializable{
             System.out.println("Inits "+title);
             if(hash != 0){
                 try{
-                    loadFile(new SortByPosted());
+                    loadFile(Settings.getSorting());
                 } 
                 catch(FileNotFoundException e){
-                    reload(new SortByPosted());
+                    reload(Settings.getSorting());
                 }
             }
             else
-                reload(new SortByPosted());
+                reload(Settings.getSorting());
             inited = true;
         }
         System.gc();
@@ -80,7 +80,7 @@ class Feed implements Serializable{
     /**
      * Loads the xml-file that was cached on the computer.
      */
-    public void loadFile(Comparator<Entry> sorting) throws FileNotFoundException{
+    public void loadFile(Sorting sorting) throws FileNotFoundException{
         Parser parser = new Parser();
         String filename = Integer.toString(hashCode())+".xml";
         Tag top = parser.parseLocal(filename);
@@ -97,7 +97,7 @@ class Feed implements Serializable{
     /**
      * Updates the feed using the xmlUrl
      */
-    public void reload(Comparator<Entry> sorting){
+    public void reload(Sorting sorting){
         Parser parser = new Parser();
         Tag top = parser.parse(xmlUrl);
         LinkedList<Entry> tempEntries = entries;
@@ -114,7 +114,7 @@ class Feed implements Serializable{
      * Recursive function to go through the tag structure parsed by 
      * the parser and create the feed and its entries.
      */
-    private void init(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
+    private void init(Tag current, Sorting sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("rss")){
                 String version = current.args.get("version");
@@ -141,7 +141,7 @@ class Feed implements Serializable{
             init(current.children.get(Integer.parseInt(index)), sorting, tempEntries);
         }
     }
-    private void initRSS2(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
+    private void initRSS2(Tag current, Sorting sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("item")){
                 Entry newEntry = new Entry(current, Entry.RSS2, this);
@@ -168,7 +168,7 @@ class Feed implements Serializable{
         }
 
     }
-    private void initAtom(Tag current, Comparator<Entry> sorting, LinkedList<Entry> tempEntries){
+    private void initAtom(Tag current, Sorting sorting, LinkedList<Entry> tempEntries){
         if(current.name != null){
             if(current.name.equals("entry")){
                 Entry newEntry = new Entry(current, Entry.ATOM, this);
@@ -198,7 +198,7 @@ class Feed implements Serializable{
     /**
      * Automatically inserts newEntry into entries.
      */
-    public void insertInto(Entry newEntry, LinkedList<Entry> tempEntries, Comparator<Entry> sorting){
+    public void insertInto(Entry newEntry, LinkedList<Entry> tempEntries, Sorting sorting){
         while(true){
             if(tempEntries.peek() == null){
                 entries.addLast(newEntry);
@@ -274,6 +274,7 @@ class Feed implements Serializable{
     public void readAll(){
         for(Entry entry : entries){
             entry.doRead();
+            entry.getView().minimize();
         }
     }
 
@@ -299,9 +300,11 @@ class Feed implements Serializable{
     }
 
     public void saveToFile(){
-        String file = Integer.toString(hashCode());
-        file += ".xml";
+        String filename = Integer.toString(hashCode());
+        filename += ".xml";
+        File file = null;
         try{
+            file = new File(Settings.getSaveDirectory(), filename);
             FileWriter writer = new FileWriter(file);
             BufferedWriter out = new BufferedWriter(writer);
 

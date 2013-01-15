@@ -21,10 +21,8 @@ class CompoundFeed extends Feed implements Serializable{
                     DefaultMutableTreeNode feed = (DefaultMutableTreeNode)child.nextElement();
                     if(feed.getUserObject() instanceof Feed){
                         ((Feed)feed.getUserObject()).init();
-                        //entries = this.append((Feed)feed.getUserObject());
                     }
                 }
-                //Collections.sort(entries, new SortByPosted());
 
                 inited = true;
             }
@@ -61,11 +59,11 @@ class CompoundFeed extends Feed implements Serializable{
         }
 
     @Override
-        public void reload(Comparator<Entry> sorting){
+        public void reload(Sorting sorting){
             for(Enumeration child = node.children(); child.hasMoreElements();){
                 DefaultMutableTreeNode feed = (DefaultMutableTreeNode)child.nextElement();
                 if(feed.getUserObject() instanceof Feed){
-                    ((Feed)feed.getUserObject()).reload(new SortByPosted());
+                    ((Feed)feed.getUserObject()).reload(Settings.getSorting());
                 }
             }
         }
@@ -125,10 +123,33 @@ class CompoundFeed extends Feed implements Serializable{
             }
         @Override
             public Entry previous(){
-                return null;
+                // TODO: check if this works!
+                Entry next = null;
+                ListIterator<Entry> bestIter = null;
+                for(ListIterator<Entry> iter : iters){
+                    if(iter.hasPrevious()){
+                        Entry temp = iter.previous();
+                        if(sorting.compare(next, temp) < 0){
+                            if(bestIter != null)
+                                // Move the pointer back a step if a earlier entry was found
+                                bestIter.next();
+                            next = temp;
+                            bestIter = iter;
+                        }
+                        else{
+                            iter.previous();
+                        }
+                    }
+                }
+                return next;
             }
         @Override
             public boolean hasPrevious(){
+                for(ListIterator<Entry> iter : iters){
+                    if(iter.hasPrevious()){
+                        return true;
+                    }
+                }
                 return false;
             }
 

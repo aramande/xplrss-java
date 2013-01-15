@@ -297,18 +297,3 @@ class Entry implements Serializable{
     }
 }
 
-class SortByPosted implements Comparator<Entry>{
-    public int compare(Entry self, Entry other){
-        if(self == null) return -1;
-        if(other == null) return 1;
-        return self.getPosted().compareTo(other.getPosted());
-    }
-}
-
-class SortByUpdated implements Comparator<Entry>{
-    public int compare(Entry self, Entry other){
-        if(self == null) return -1;
-        if(other == null) return 1;
-        return self.getUpdated().compareTo(other.getUpdated());
-    }
-}

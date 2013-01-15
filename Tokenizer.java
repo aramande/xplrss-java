@@ -1,12 +1,16 @@
 import java.util.*;
 import java.util.regex.*;
 public class Tokenizer{
-    ArrayList<Token> tokens = new ArrayList<Token>();
+    ArrayList<Token> tokens = null;
     int currentToken;
 
     public Tokenizer(){
         tokens = new ArrayList<Token>();
         currentToken = -1;
+    }
+
+    public void clear(){
+        tokens.clear();
     }
 
     /**
@@ -17,6 +21,62 @@ public class Tokenizer{
         if(currentToken+1 >= tokens.size())
             return null; 
         return tokens.get(++currentToken);
+    }
+
+    /**
+     * Returns false if index of the next token is out of range.
+     */
+    public boolean hasNextToken(){
+        if(currentToken+1 > tokens.size())
+            return false;
+        if(currentToken <= 0)
+            return false;
+        return true;
+    }
+
+    /**
+     * Retrieve the current token from the list and increment the currentToken
+     * counter.
+     */
+    public Token getToken(){
+        if(currentToken == -1) return null;
+        return tokens.get(currentToken);
+    }
+
+    /**
+     * Check if the next token is equal to 'token' and increment the
+     * currentToken counter.
+     */
+    public boolean isNextToken(String token){
+        if(currentToken+1 >= tokens.size())
+            return false; 
+        return tokens.get(++currentToken).identifier.equals(token);
+    }
+
+    /**
+     * Check if the next token is equal to 'token' and increment the
+     * currentToken counter.
+     */
+    public boolean isNextToken(Type token){
+        if(currentToken+1 >= tokens.size())
+            return false; 
+        return tokens.get(++currentToken).type.equals(token);
+    }
+
+    /**
+     * Check if the current token is equal to 'token'.
+     */
+    public boolean isToken(String token){
+        if(currentToken == -1) return false;
+        return tokens.get(currentToken).identifier.equals(token);
+    }
+
+    /**
+     * Check if the current token is equal to 'token'.
+     */
+    public boolean isToken(Type token){
+        if(currentToken == -1) return false;
+        return tokens.get(currentToken).type.equals(token);
     }
 
     /**
@@ -68,7 +128,6 @@ public class Tokenizer{
     /**
      * Search through tokens until the next 'identifier'. Does not increment
      * the currentToken pointer.
-
      *
      * @return Index of the token
      */
@@ -80,7 +139,6 @@ public class Tokenizer{
         result = currentToken;
         currentToken = tempCurrentToken;
         return result;
-
     }
     
     /**
@@ -118,19 +176,20 @@ public class Tokenizer{
     }
 
     /**
-     * Lists all tokens from (but not including) currentToken up to (but not including) an identifier. Does not
+     * Lists all tokens from (and including) currentToken up to (but not including) an identifier. Does not
      * increment the currentToken pointer.
      */
     public ArrayList<Token> listTokensTo(String identifier){
         ArrayList<Token> result = new ArrayList<Token>();
-        Token token;
+        Token token = getToken();
         int tempCurrentToken = currentToken;
-        while((token = nextToken()) != null){
+        if(token == null) return result;
+        do{
             if(token.identifier.equals(identifier)){
                 break;
             }
             result.add(token);
-        }
+        } while((token = nextToken()) != null);
         currentToken = tempCurrentToken;
         return result;
 
@@ -138,7 +197,7 @@ public class Tokenizer{
 
     /**
      * Increments the currentToken pointer to a specific token. Following
-     * nextToken call will retrieve the token following the token you provided.
+     * getToken call will retrieve the token you provided.
      */
     public void moveTo(Token token){
         int index = currentToken;
@@ -168,46 +227,11 @@ public class Tokenizer{
         return tokens.get(index);
     }
 
-    private char[] cleanHtml(char[] content){
-        int index = 0;
-        final int size = 4;
-        StringBuffer result = new StringBuffer(content.length);
-        result.append(content);
-        result.trimToSize();
-
-        while(index < result.length()){
-            int rightEnd = result.indexOf("&gt;", index);
-            if(rightEnd == -1){
-                return result.toString().toCharArray();
-            }
-            StringBuffer temp = new StringBuffer(result.substring(index, rightEnd));
-            int leftEnd = temp.lastIndexOf("&lt;");
-            if(leftEnd != -1){
-                int other = temp.lastIndexOf(">");
-                if(other > leftEnd){
-                    index = leftEnd+index+size;
-                    continue;
-                }
-                other = temp.lastIndexOf("<");
-                if(other > leftEnd){
-                    index = leftEnd+index+size;
-                    continue;
-                }
-                result.replace(rightEnd, rightEnd + size, ">");
-                result.replace(leftEnd + index, leftEnd + index + size, "<");
-                index = leftEnd;
-            }
-            else{
-                index = rightEnd+1;
-            }
-        }
-        return result.toString().toCharArray();
-    }
-
     public void tokenize(String input){
         char[] buffer = scan(input);
-        buffer = cleanHtml(buffer);
         int tmpIndex;
+
+        clear();
         for(int i=0; i<buffer.length; ++i){
             if(buffer[i] == '\0')
                 break;
@@ -274,9 +298,8 @@ fromStart:
             // If it gets here, the character currently parsed isn't of the same type 
             return i;
         }
-        System.err.println("Fatal Error: Something horrible has happened!\nExiting with token: "+token+" and was looking for type: "+type);
-        System.exit(1);
-        return 0;
+        // Found end of file
+        return offset+buffer.length;
     }
 
     private char[] scan(String input){

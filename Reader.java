@@ -64,6 +64,7 @@ public class Reader implements TreeSelectionListener{
         splitPane.setDividerLocation(splitSize);
         window.add(splitPane, BorderLayout.CENTER);
 
+        Settings.getSaveDirectory().mkdirs();
 
         window.pack();
         window.setVisible(true);
@@ -186,7 +187,6 @@ class FirstTimeRendering extends WindowAdapter{
 
             AutomaticReload reload = new AutomaticReload();
             reload.start();
-
         }
 
     @Override
@@ -203,10 +203,11 @@ class AutomaticReload extends Thread{
         public void run(){
             while(true){
                 try{
-                    sleep(1000*60);
+                    sleep(1000*60*Settings.getReloadDelay());
                     System.out.println("Reloading!");
                     DefaultMutableTreeNode root = FeedTree.init().getRoot();
-                    ((Feed)root.getUserObject()).reload(new SortByPosted());
+                    ((Feed)root.getUserObject()).reload(Settings.getSorting());
+                    System.gc();
                     //Not working vvv, implement later?
                     //FeedList.init().renderFeed(true, true);
                 }
